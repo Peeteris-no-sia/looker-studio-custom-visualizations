@@ -1,0 +1,30 @@
+#container {
+  font-family: Roboto, sans-serif;
+  padding: 10px;
+}
+
+.bar {
+  fill: #4285f4;
+  stroke: #1a73e8;
+  stroke-width: 1px;
+}
+
+.axis {
+  font-size: 12px;
+}
+
+.axis text {
+  fill: #5f6368;
+}
+
+.axis line,
+.axis path {
+  stroke: #dadce0;
+  stroke-width: 1px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  fill: #202124;
+}

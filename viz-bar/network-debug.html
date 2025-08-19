@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Looker Studio Viz Network Debugger</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .debug-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .debug-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .url-test {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            align-items: center;
+        }
+        .url-test input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .url-test button {
+            padding: 8px 16px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .url-test button:hover {
+            background: #3367d6;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .log-output {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .clear-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .cors-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Looker Studio Visualization Network Debugger</h1>
+        <p>This tool helps debug network connectivity issues with your custom visualizations.</p>
+
+        <div class="debug-section">
+            <h3>📡 Resource Accessibility Test</h3>
+            <p>Test if your visualization resources are publicly accessible:</p>
+            
+            <div class="url-test">
+                <input type="text" id="js-url" value="gs://darbnesis-viz-assets/viz-bar/viz.js" placeholder="Enter JS file URL">
+                <button onclick="testResource('js-url', 'js-status')">Test JS</button>
+                <span id="js-status" class="status pending">Not tested</span>
+            </div>
+            
+            <div class="url-test">
+                <input type="text" id="config-url" value="gs://darbnesis-viz-assets/viz-bar/viz-config.json" placeholder="Enter config file URL">
+                <button onclick="testResource('config-url', 'config-status')">Test Config</button>
+                <span id="config-status" class="status pending">Not tested</span>
+            </div>
+            
+            <div class="url-test">
+                <input type="text" id="css-url" value="gs://darbnesis-viz-assets/viz-bar/viz.css" placeholder="Enter CSS file URL">
+                <button onclick="testResource('css-url', 'css-status')">Test CSS</button>
+                <span id="css-status" class="status pending">Not tested</span>
+            </div>
+            
+            <div class="url-test">
+                <input type="text" id="manifest-url" value="gs://darbnesis-viz-assets/viz-bar/manifest.json" placeholder="Enter manifest URL">
+                <button onclick="testResource('manifest-url', 'manifest-status')">Test Manifest</button>
+                <span id="manifest-status" class="status pending">Not tested</span>
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h3>🌐 HTTP URL Conversion Test</h3>
+            <p>Convert GS URLs to HTTP and test accessibility:</p>
+            <div id="http-urls"></div>
+        </div>
+
+        <div class="cors-info">
+            <h4>💡 CORS Information</h4>
+            <p><strong>Note:</strong> GS:// URLs cannot be tested directly from this browser tool due to CORS restrictions. 
+            However, this tool converts them to HTTP URLs that Looker Studio uses internally.</p>
+            <p><strong>Common Issues:</strong></p>
+            <ul>
+                <li>Files not publicly readable (check IAM permissions)</li>
+                <li>Bucket doesn't exist or is in wrong region</li>
+                <li>File paths don't match manifest.json resource paths</li>
+                <li>Content-Type headers are incorrect</li>
+            </ul>
+        </div>
+
+        <div class="debug-section">
+            <h3>📋 Debug Log</h3>
+            <button class="clear-btn" onclick="clearLog()">Clear Log</button>
+            <div id="debug-log" class="log-output">Ready to test resources...\n</div>
+        </div>
+
+        <div class="debug-section">
+            <h3>🔧 Quick Fixes</h3>
+            <h4>1. Check GCS Bucket Permissions:</h4>
+            <pre>gsutil iam get gs://darbnesis-viz-assets</pre>
+            <p>Should include: <code>"members": ["allUsers"], "role": "roles/storage.objectViewer"</code></p>
+            
+            <h4>2. Verify File Upload:</h4>
+            <pre>gsutil ls -la gs://darbnesis-viz-assets/viz-bar/</pre>
+            
+            <h4>3. Test Public Access:</h4>
+            <pre>curl -I https://storage.googleapis.com/darbnesis-viz-assets/viz-bar/manifest.json</pre>
+            <p>Should return <code>200 OK</code></p>
+            
+            <h4>4. Re-upload with Correct Headers:</h4>
+            <pre>gsutil -h "Cache-Control:no-cache" -h "Content-Type:application/json" cp -a public-read viz-bar/manifest.json gs://darbnesis-viz-assets/viz-bar/</pre>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logElement = document.getElementById('debug-log');
+            const timestamp = new Date().toISOString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debug-log').textContent = 'Log cleared...\n';
+        }
+
+        function gsToHttp(gsUrl) {
+            // Convert gs://bucket/path to https://storage.googleapis.com/bucket/path
+            if (gsUrl.startsWith('gs://')) {
+                return gsUrl.replace('gs://', 'https://storage.googleapis.com/');
+            }
+            return gsUrl;
+        }
+
+        async function testResource(inputId, statusId) {
+            const url = document.getElementById(inputId).value;
+            const statusElement = document.getElementById(statusId);
+            const httpUrl = gsToHttp(url);
+            
+            log(`Testing resource: ${url}`);
+            log(`HTTP URL: ${httpUrl}`);
+            
+            statusElement.textContent = 'Testing...';
+            statusElement.className = 'status pending';
+            
+            try {
+                const response = await fetch(httpUrl, {
+                    method: 'HEAD',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    statusElement.textContent = `✅ ${response.status}`;
+                    statusElement.className = 'status success';
+                    log(`✅ SUCCESS: ${url} - Status: ${response.status}`);
+                    log(`   Content-Type: ${response.headers.get('content-type')}`);
+                    log(`   Cache-Control: ${response.headers.get('cache-control')}`);
+                    log(`   Content-Length: ${response.headers.get('content-length')}`);
+                } else {
+                    statusElement.textContent = `❌ ${response.status}`;
+                    statusElement.className = 'status error';
+                    log(`❌ ERROR: ${url} - Status: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                statusElement.textContent = `❌ ${error.message}`;
+                statusElement.className = 'status error';
+                log(`❌ NETWORK ERROR: ${url} - ${error.message}`);
+                
+                if (error.message.includes('CORS')) {
+                    log(`   💡 CORS error - this is expected for direct browser testing`);
+                    log(`   💡 Try the HTTP URL directly in browser: ${httpUrl}`);
+                }
+            }
+        }
+
+        // Auto-generate HTTP URL tests
+        function generateHttpTests() {
+            const container = document.getElementById('http-urls');
+            const urls = [
+                'gs://darbnesis-viz-assets/viz-bar/viz.js',
+                'gs://darbnesis-viz-assets/viz-bar/viz-config.json',
+                'gs://darbnesis-viz-assets/viz-bar/viz.css',
+                'gs://darbnesis-viz-assets/viz-bar/manifest.json'
+            ];
+            
+            container.innerHTML = '';
+            urls.forEach(url => {
+                const httpUrl = gsToHttp(url);
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <p><strong>GS:</strong> <code>${url}</code></p>
+                    <p><strong>HTTP:</strong> <a href="${httpUrl}" target="_blank">${httpUrl}</a></p>
+                    <hr>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Network debugger initialized');
+            generateHttpTests();
+        });
+    </script>
+</body>
+</html>

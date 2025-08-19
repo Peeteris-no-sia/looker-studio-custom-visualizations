@@ -1,0 +1,25 @@
+{
+    "name": "Custom Bar (Color field) - DEBUG",
+    "organization": "Your Name",
+    "organizationUrl": "https://example.com",
+    "description": "DEBUG VERSION: Bars colored by a Color field; safe fallbacks.",
+    "logoUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/table-chart.png",
+    "supportUrl": "https://example.com/support",
+    "packageUrl": "https://example.com/viz/barcolor",
+    "privacyPolicyUrl": "https://example.com/privacy",
+    "termsOfServiceUrl": "https://example.com/terms",
+    "devMode": true,
+    "components": [
+    {
+    "id": "barcolor-debug",
+    "name": "Bar (Color field) - DEBUG",
+    "description": "DEBUG: Bar chart with per-category color from data and comprehensive logging.",
+    "iconUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/table-chart.png",
+    "resource": {
+    "js": "gs://darbnesis-viz-assets/viz-bar/viz.js",
+    "config": "gs://darbnesis-viz-assets/viz-bar/viz-config.json",
+    "css": "gs://darbnesis-viz-assets/viz-bar/viz.css"
+    }
+    }
+    ]
+}

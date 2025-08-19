@@ -15,6 +15,7 @@ provider "google" {
 locals {
   bar_files  = setunion(setunion(fileset("${path.module}/../viz-bar", "manifest.json"), fileset("${path.module}/../viz-bar", "viz.*")), fileset("${path.module}/../viz-bar", "viz-config.json"))
   line_files = setunion(setunion(fileset("${path.module}/../viz-line", "manifest.json"), fileset("${path.module}/../viz-line", "viz.*")), fileset("${path.module}/../viz-line", "viz-config.json"))
+  test_files = setunion(setunion(fileset("${path.module}/../viz-test", "manifest.json"), fileset("${path.module}/../viz-test", "viz.*")), fileset("${path.module}/../viz-test", "viz-config.json"))
   content_types = {
     "manifest.json"  = "application/json"
     "viz-config.json" = "application/json"
@@ -80,6 +81,26 @@ resource "google_storage_bucket_object" "line_manifest_root" {
   bucket        = google_storage_bucket.viz.name
   name          = "viz-line-manifest.json"
   source        = "${path.module}/../viz-line/manifest.json"
+  cache_control = "no-cache"
+  content_type  = "application/json"
+  depends_on    = [google_storage_bucket.viz]
+}
+
+# Test visualization files
+resource "google_storage_bucket_object" "test_files" {
+  for_each      = local.test_files
+  bucket        = google_storage_bucket.viz.name
+  name          = "viz-test/${each.value}"
+  source        = "${path.module}/../viz-test/${each.value}"
+  cache_control = "no-cache"
+  content_type  = lookup(local.content_types, each.value, null)
+  depends_on    = [google_storage_bucket.viz]
+}
+
+resource "google_storage_bucket_object" "test_manifest_root" {
+  bucket        = google_storage_bucket.viz.name
+  name          = "viz-test-manifest.json"
+  source        = "${path.module}/../viz-test/manifest.json"
   cache_control = "no-cache"
   content_type  = "application/json"
   depends_on    = [google_storage_bucket.viz]

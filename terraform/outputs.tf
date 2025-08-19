@@ -3,6 +3,7 @@ output "looker_manifest_paths" {
   value = [
     "gs://${google_storage_bucket.viz.name}/viz-bar",
     "gs://${google_storage_bucket.viz.name}/viz-line",
+    "gs://${google_storage_bucket.viz.name}/viz-test",
   ]
 }
 

@@ -20,19 +20,31 @@
   <script>
     window.dscc = {
       objectTransform: x => x,
+      getWidth: () => document.getElementById('bar-chart').clientWidth,
+      getHeight: () => document.getElementById('bar-chart').clientHeight,
       subscribeToData: (cb) => {
+        console.log('[DEV-HARNESS] Setting up test data');
         const payload = {
-          fields: { Value: { label: 'Value' } },
+          fields: { 
+            Value: { label: 'Test Value' },
+            Category: { label: 'Test Category' },
+            Color: { label: 'Test Color' }
+          },
           tables: {
             DEFAULT: [
-              { Category: 'A', Value: 3 },
-              { Category: 'B', Value: 30 },
-              { Category: 'C', Value: 20 },
-              { Category: 'D', Value: 15 }
+              { Category: 'Company A', Value: 30, Color: '#119d9d' },
+              { Category: 'Company B', Value: 45, Color: '#48aeb3' },
+              { Category: 'Company C', Value: 20, Color: '#1a686c' },
+              { Category: 'Company D', Value: 35, Color: '#8cd7d6' },
+              { Category: 'Company E', Value: 15, Color: '#4d6063' }
             ]
           }
         };
-        const run = () => cb(payload);
+        console.log('[DEV-HARNESS] Test data:', payload);
+        const run = () => {
+          console.log('[DEV-HARNESS] Calling visualization draw function');
+          cb(payload);
+        };
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', run);
         } else {

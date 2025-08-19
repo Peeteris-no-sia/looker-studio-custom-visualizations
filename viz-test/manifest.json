@@ -1,0 +1,25 @@
+{
+  "name": "TestVisualization",
+  "organization": "DarbnesisTech", 
+  "description": "Simple test visualization",
+  "logoUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/table-chart.png",
+  "organizationUrl": "https://example.com",
+  "supportUrl": "https://example.com/support", 
+  "packageUrl": "https://example.com/viz/test",
+  "privacyPolicyUrl": "https://example.com/privacy",
+  "termsOfServiceUrl": "https://example.com/terms",
+  "devMode": true,
+  "components": [
+    {
+      "id": "testchart",
+      "name": "TestChart",
+      "description": "Simple test chart",
+      "iconUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/table-chart.png",
+      "resource": {
+        "js": "gs://darbnesis-viz-assets/viz-test/viz.js",
+        "config": "gs://darbnesis-viz-assets/viz-test/viz-config.json", 
+        "css": "gs://darbnesis-viz-assets/viz-test/viz.css"
+      }
+    }
+  ]
+}
