@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>viz-line dev</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #root { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    window.dscc = {
+      objectTransform: x => x,
+      subscribeToData: (cb) => {
+        const payload = {
+          fields: { Value: { label: 'Value' } },
+          tables: {
+            DEFAULT: [
+              { X: 'Jan', Value: 10, Series: 'A' },
+              { X: 'Feb', Value: 15, Series: 'A' },
+              { X: 'Mar', Value: 9,  Series: 'A' },
+              { X: 'Jan', Value: 8,  Series: 'B' },
+              { X: 'Feb', Value: 12, Series: 'B' },
+              { X: 'Mar', Value: 14, Series: 'B' }
+            ]
+          }
+        };
+        const run = () => cb(payload);
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+      }
+    };
+  </script>
+  <script src="./viz.js"></script>
+</body>
+</html>
+
+

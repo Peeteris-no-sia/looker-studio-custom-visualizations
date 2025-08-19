@@ -1,0 +1,22 @@
+{
+  "name": "Custom Line Chart",
+  "organization": "Your Name", 
+  "description": "Line chart with optional series grouping and dynamic styling.",
+  "logoUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/line-chart.png",
+  "supportUrl": "https://example.com",
+  "packageUrl": "https://example.com",
+  "devMode": true,
+  "components": [{
+    "id": "linechart",
+    "name": "Line Chart",
+    "description": "Line chart with dynamic styling and optional series.",
+    "iconUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/line-chart.png",
+    "resource": {
+      "js": "https://storage.googleapis.com/darbnesis-viz-assets/viz-line/viz.js",
+      "config": "https://storage.googleapis.com/darbnesis-viz-assets/viz-line/viz-config.json",
+      "css": "https://storage.googleapis.com/darbnesis-viz-assets/viz-line/viz.css"
+    }
+  }]
+}
+
+

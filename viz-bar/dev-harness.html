@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>viz-bar dev</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    #bar-chart {
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="bar-chart"></div>
+
+  <script>
+    window.dscc = {
+      objectTransform: x => x,
+      subscribeToData: (cb) => {
+        const payload = {
+          fields: { Value: { label: 'Value' } },
+          tables: {
+            DEFAULT: [
+              { Category: 'A', Value: 3 },
+              { Category: 'B', Value: 30 },
+              { Category: 'C', Value: 20 },
+              { Category: 'D', Value: 15 }
+            ]
+          }
+        };
+        const run = () => cb(payload);
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', run);
+        } else {
+          run();
+        }
+      }
+    };
+  </script>
+  <script src="./viz.js"></script>
+</body>
+</html>
