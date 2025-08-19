@@ -67,24 +67,8 @@ resource "google_storage_bucket_object" "line_files" {
   depends_on    = [google_storage_bucket.viz]
 }
 
-# Upload manifest files to root for easier access
-resource "google_storage_bucket_object" "bar_manifest_root" {
-  bucket        = google_storage_bucket.viz.name
-  name          = "viz-bar-manifest.json"
-  source        = "${path.module}/../viz-bar/manifest.json"
-  cache_control = "no-cache"
-  content_type  = "application/json"
-  depends_on    = [google_storage_bucket.viz]
-}
-
-resource "google_storage_bucket_object" "line_manifest_root" {
-  bucket        = google_storage_bucket.viz.name
-  name          = "viz-line-manifest.json"
-  source        = "${path.module}/../viz-line/manifest.json"
-  cache_control = "no-cache"
-  content_type  = "application/json"
-  depends_on    = [google_storage_bucket.viz]
-}
+# Note: Looker Studio expects manifest.json to be inside the folder with other files
+# No need for separate root manifest files
 
 # Test visualization files
 resource "google_storage_bucket_object" "test_files" {
@@ -97,13 +81,6 @@ resource "google_storage_bucket_object" "test_files" {
   depends_on    = [google_storage_bucket.viz]
 }
 
-resource "google_storage_bucket_object" "test_manifest_root" {
-  bucket        = google_storage_bucket.viz.name
-  name          = "viz-test-manifest.json"
-  source        = "${path.module}/../viz-test/manifest.json"
-  cache_control = "no-cache"
-  content_type  = "application/json"
-  depends_on    = [google_storage_bucket.viz]
-}
+# Test manifest is already included in test_files above
 
 

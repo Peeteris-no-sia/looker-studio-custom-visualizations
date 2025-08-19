@@ -62,7 +62,7 @@ terraform apply -var "project_id=your-project" -var "bucket_name=your-bucket"
 
 1. Open Looker Studio
 2. Add Chart → Community Visualizations
-3. Use this manifest URL: `gs://your-bucket/viz-test-manifest.json`
+3. Use this folder URL: `gs://your-bucket/viz-test`
 4. Configure your dimension and metric fields
 5. **See real data appear!** 🎉
 

@@ -92,9 +92,9 @@ cd ../terraform
 terraform apply -var "project_id=your-project" -var "bucket_name=your-bucket"
 ```
 
-Use this manifest URL in Looker Studio:
+Use this folder URL in Looker Studio:
 ```
-gs://your-bucket/viz-bar-manifest.json
+gs://your-bucket/viz-bar
 ```
 
 ## 🔧 **Development Roadmap**

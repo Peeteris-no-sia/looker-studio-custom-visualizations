@@ -47,11 +47,11 @@ terraform output looker_manifest_paths
 
 ## 📊 **Deployed Visualizations**
 
-| Visualization | Manifest URL | Status |
-|---------------|--------------|---------|
-| **🎯 Test Viz** | `gs://bucket/viz-test-manifest.json` | ✅ **Working with real data** |
-| **📊 Bar Chart** | `gs://bucket/viz-bar-manifest.json` | 🔄 Being updated with working patterns |
-| **📈 Line Chart** | `gs://bucket/viz-line-manifest.json` | 🔄 Being updated with working patterns |
+| Visualization | Folder URL | Status |
+|---------------|------------|---------|
+| **🎯 Test Viz** | `gs://bucket/viz-test` | ✅ **Working with real data** |
+| **📊 Bar Chart** | `gs://bucket/viz-bar` | ✅ **Updated with working patterns** |
+| **📈 Line Chart** | `gs://bucket/viz-line` | 🔄 Being updated with working patterns |
 
 ## 🔧 **Configuration Variables**
 
@@ -78,9 +78,7 @@ gs://your-bucket/
 │   └── viz.css              # Bar chart styling
 ├── viz-line/
 │   └── ...                  # Line chart files
-├── viz-test-manifest.json   # ✅ Root manifest for test viz
-├── viz-bar-manifest.json    # Root manifest for bar chart
-└── viz-line-manifest.json   # Root manifest for line chart
+# Note: Looker Studio accesses manifest.json within each folder automatically
 ```
 
 ## 🌐 **Infrastructure Details**
@@ -116,9 +114,9 @@ cors {
 2. Add Chart → Community Visualizations  
 3. Click "Explore more" → "Build your own visualization"
 
-### **2. Use Manifest URL**
+### **2. Use Folder URL**
 ```
-gs://your-bucket-name/viz-test-manifest.json
+gs://your-bucket-name/viz-test
 ```
 
 ### **3. Configure Fields**

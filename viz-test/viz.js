@@ -1,83 +1,5 @@
-// Simple Test Visualization - Enhanced data detection
+// Simple Test Visualization - Using the ORIGINAL working pattern from before
 console.log('🚀 Test Visualization Loading...');
-
-// Enhanced environment inspection
-function inspectEnvironment() {
-  console.log('🔍 === FULL ENVIRONMENT INSPECTION ===');
-  
-  // Check URL parameters for data
-  const url = new URL(window.location.href);
-  console.log('📍 Current URL:', window.location.href);
-  console.log('📋 URL Search Params:', url.searchParams.toString());
-  
-  // Check for any global data variables
-  const potentialDataVars = ['data', 'vizData', 'chartData', 'tableData', 'reportData', 'visualization'];
-  potentialDataVars.forEach(varName => {
-    if (window[varName]) {
-      console.log(`📊 Found window.${varName}:`, window[varName]);
-    }
-  });
-  
-  // Check for parent window communication
-  try {
-    if (window.parent && window.parent !== window) {
-      console.log('👥 Parent window exists');
-      // Try to listen for messages from parent
-      window.addEventListener('message', function(event) {
-        console.log('📨 Received message from parent:', event);
-        if (event.data && typeof event.data === 'object') {
-          console.log('📊 Message data looks like:', event.data);
-          // Check if this looks like visualization data
-          if (event.data.tables || event.data.fields || event.data.rows) {
-            console.log('🎉 Found data in message! Trying to visualize...');
-            drawViz(event.data);
-          }
-        }
-      });
-    }
-  } catch (e) {
-    console.log('❌ Cannot access parent:', e.message);
-  }
-  
-  // Check window object for any Looker Studio specific properties
-  const windowProps = Object.getOwnPropertyNames(window).filter(prop => 
-    prop.toLowerCase().includes('google') || 
-    prop.toLowerCase().includes('looker') || 
-    prop.toLowerCase().includes('data') || 
-    prop.toLowerCase().includes('viz') ||
-    prop.toLowerCase().includes('chart')
-  );
-  console.log('🔍 Looker/Data related window properties:', windowProps);
-  
-  // Inspect any functions that might be callbacks
-  windowProps.forEach(prop => {
-    if (typeof window[prop] === 'function') {
-      console.log(`🔧 Function ${prop}:`, window[prop].toString().substring(0, 200));
-    } else if (window[prop] && typeof window[prop] === 'object') {
-      console.log(`📦 Object ${prop}:`, window[prop]);
-      
-      // Deep dive into google.lookerstudio!
-      if (prop === 'google' && window[prop].lookerstudio) {
-        console.log('🎯 FOUND LOOKERSTUDIO OBJECT! Inspecting...');
-        console.log('google.lookerstudio:', window[prop].lookerstudio);
-        
-        const ls = window[prop].lookerstudio;
-        console.log('lookerstudio keys:', Object.keys(ls));
-        
-        Object.keys(ls).forEach(key => {
-          console.log(`lookerstudio.${key}:`, ls[key]);
-          if (typeof ls[key] === 'function') {
-            console.log(`lookerstudio.${key} function:`, ls[key].toString().substring(0, 300));
-          } else if (ls[key] && typeof ls[key] === 'object') {
-            console.log(`lookerstudio.${key} object keys:`, Object.keys(ls[key]));
-          }
-        });
-      }
-    }
-  });
-  
-  console.log('🔍 === END ENVIRONMENT INSPECTION ===');
-}
 
 // Main visualization function
 function drawViz(data) {
@@ -97,258 +19,207 @@ function drawViz(data) {
   try {
     console.log('🔍 Data type:', typeof data);
     console.log('🔍 Data keys:', data ? Object.keys(data) : 'data is null');
-    console.log('🔍 Data.tables exists:', !!data.tables);
     
-    // Log each key and its type/value
-    if (data && typeof data === 'object') {
-      Object.keys(data).forEach(key => {
-        console.log(`🔍 data.${key}:`, typeof data[key], data[key]);
-      });
-    }
-    
-    // Extract data - handle the REAL Looker Studio format!
-    let tableData = [];
-    let fieldsMap = {};
-    
-    if (data && data.dataResponse && data.dataResponse.tables && data.dataResponse.tables.length > 0) {
+    // Check if we have the correct Looker Studio data format
+    if (data && data.dataResponse && data.dataResponse.tables && data.fields) {
       console.log('🎉 Found REAL Looker Studio data format!');
       
-      // Get the table data
-      const table = data.dataResponse.tables[0]; // Use first table
-      const rawRows = table.rows || [];
-      const fieldIds = table.fields || [];
+      // Extract data from the correct path: data.dataResponse.tables[0].rows
+      const rows = data.dataResponse.tables[0].rows;
+      const fieldIds = data.dataResponse.tables[0].fields;
       
-      console.log('📊 Raw rows:', rawRows);
+      console.log('📊 Raw rows:', rows);
       console.log('📊 Field IDs:', fieldIds);
       
-      // Create field mapping from field definitions
-      if (data.fields && Array.isArray(data.fields)) {
-        data.fields.forEach(field => {
-          fieldsMap[field.id] = field.name;
-        });
-      }
-      
+      // Create field mapping from IDs to names using data.fields
+      const fieldsMap = {};
+      data.fields.forEach(field => {
+        fieldsMap[field.id] = field.name;
+      });
       console.log('📊 Fields map:', fieldsMap);
       
-      // Convert rows to objects with proper field names
-      tableData = rawRows.map(row => {
+      // Convert row arrays to objects with field names
+      const tableData = rows.map(row => {
         const rowObj = {};
         fieldIds.forEach((fieldId, index) => {
-          const fieldName = fieldsMap[fieldId] || fieldId;
+          const fieldName = fieldsMap[fieldId];
           rowObj[fieldName] = row[index];
         });
         return rowObj;
       });
       
       console.log('📊 Converted table data:', tableData);
-    } else {
-      console.log('⚠️ No recognizable table data found');
-      container.innerHTML = `
-        <div style="padding: 20px;">
-          <h3>🔍 Debug: Received Data Structure</h3>
-          <pre style="background: #f5f5f5; padding: 10px; overflow: auto; font-size: 12px;">${JSON.stringify(data, null, 2)}</pre>
-        </div>
-      `;
-      return;
-    }
-    
-    console.log('📊 Table data:', tableData);
-    
-    if (tableData.length === 0) {
-      container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No data available</div>';
-      return;
-    }
-    
-    // Get ALL field mappings dynamically - works for any visualization type!
-    const fieldMappings = {
-      dimensions: [],
-      metrics: [],
-      allFields: {}
-    };
-    
-    if (data.fields && Array.isArray(data.fields)) {
+      
+      // Create field mappings by concept type for flexible field access
+      const fieldMappings = {
+        dimensions: [],
+        metrics: [],
+        allFields: {}
+      };
+      
       data.fields.forEach(field => {
         fieldMappings.allFields[field.name] = field;
-        
         if (field.concept === 'DIMENSION') {
-          fieldMappings.dimensions.push(field);
+          fieldMappings.dimensions.push({ id: field.id, name: field.name });
         } else if (field.concept === 'METRIC') {
-          fieldMappings.metrics.push(field);
+          fieldMappings.metrics.push({ id: field.id, name: field.name });
         }
       });
-    }
-    
-    console.log('🔍 Field mappings:', fieldMappings);
-    console.log('🔍 Available dimensions:', fieldMappings.dimensions.map(f => f.name));
-    console.log('🔍 Available metrics:', fieldMappings.metrics.map(f => f.name));
-    
-    // For backwards compatibility, still provide the first dimension/metric
-    const primaryDimension = fieldMappings.dimensions[0]?.name || 'dimension';
-    const primaryMetric = fieldMappings.metrics[0]?.name || 'metric';
-    
-    console.log('🔍 Primary fields:', { dimension: primaryDimension, metric: primaryMetric });
-    
-    // Create DYNAMIC table that handles any number of fields!
-    let html = '<h3>🎯 Dynamic Test Visualization</h3>';
-    
-    // Get all unique field names from the actual data
-    const allFieldNames = tableData.length > 0 ? Object.keys(tableData[0]) : [];
-    
-    html += '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
-    
-    // Dynamic header based on actual fields
-    html += '<thead><tr>';
-    allFieldNames.forEach(fieldName => {
-      const fieldInfo = fieldMappings.allFields[fieldName];
-      const fieldType = fieldInfo ? fieldInfo.concept : 'UNKNOWN';
-      const badge = fieldType === 'DIMENSION' ? '📊' : fieldType === 'METRIC' ? '📈' : '❓';
-      html += `<th style="padding: 8px; background: #f5f5f5;">${badge} ${fieldName} <small>(${fieldType})</small></th>`;
-    });
-    html += '</tr></thead>';
-    
-    // Dynamic rows
-    html += '<tbody>';
-    tableData.forEach(row => {
-      html += '<tr>';
-      allFieldNames.forEach(fieldName => {
-        const value = row[fieldName] || 'N/A';
-        html += `<td style="padding: 8px; border: 1px solid #ddd;">${value}</td>`;
+      
+      console.log('🔍 Field mappings:', fieldMappings);
+      console.log('🔍 Available dimensions:', fieldMappings.dimensions.map(d => d.name));
+      console.log('🔍 Available metrics:', fieldMappings.metrics.map(m => m.name));
+      
+      // Get primary dimension and metric for simple display
+      const primaryFields = {
+        dimension: fieldMappings.dimensions[0]?.name,
+        metric: fieldMappings.metrics[0]?.name
+      };
+      
+      console.log('🔍 Primary fields:', primaryFields);
+      
+      // Create simple table visualization
+      let html = `
+        <div style="padding: 20px; font-family: Arial, sans-serif;">
+          <h3>✅ Test Visualization Working!</h3>
+          <div style="margin-bottom: 15px;">
+            <strong>📊 Data Summary:</strong><br>
+            • Rows: ${tableData.length}<br>
+            • Dimensions: ${fieldMappings.dimensions.length}<br>
+            • Metrics: ${fieldMappings.metrics.length}<br>
+            • Primary Dimension: ${primaryFields.dimension}<br>
+            • Primary Metric: ${primaryFields.metric}
+          </div>
+          
+          <table style="border-collapse: collapse; width: 100%; border: 1px solid #ddd;">
+            <thead>
+              <tr style="background-color: #f5f5f5;">
+                <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">${primaryFields.dimension}</th>
+                <th style="border: 1px solid #ddd; padding: 12px; text-align: right;">${primaryFields.metric}</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      tableData.forEach((row, index) => {
+        const bgColor = index % 2 === 0 ? '#ffffff' : '#f9f9f9';
+        html += `
+          <tr style="background-color: ${bgColor};">
+            <td style="border: 1px solid #ddd; padding: 12px;">${row[primaryFields.dimension]}</td>
+            <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold;">${row[primaryFields.metric]}</td>
+          </tr>
+        `;
       });
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
-    
-    // Enhanced data summary
-    html += `<div style="background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px;">`;
-    html += `<h4>📊 Data Summary</h4>`;
-    html += `<ul style="margin: 0;">`;
-    html += `<li><strong>Total rows:</strong> ${tableData.length}</li>`;
-    html += `<li><strong>Dimensions:</strong> ${fieldMappings.dimensions.map(f => f.name).join(', ') || 'None'}</li>`;
-    html += `<li><strong>Metrics:</strong> ${fieldMappings.metrics.map(f => f.name).join(', ') || 'None'}</li>`;
-    html += `<li><strong>Total fields:</strong> ${allFieldNames.length}</li>`;
-    html += `</ul>`;
-    html += `</div>`;
-    
-    // Field access patterns for different viz types
-    html += `<div style="background: #e8f5e8; padding: 15px; margin: 10px 0; border-radius: 5px;">`;
-    html += `<h4>🔧 Field Access Patterns for Different Visualizations</h4>`;
-    html += `<div style="font-family: monospace; font-size: 12px;">`;
-    html += `<p><strong>📊 Bar Chart with Color:</strong></p>`;
-    html += `<ul style="margin: 0 0 10px 20px;">`;
-    html += `<li>Category: fieldMappings.dimensions[0]?.name = "${fieldMappings.dimensions[0]?.name || 'undefined'}"</li>`;
-    html += `<li>Value: fieldMappings.metrics[0]?.name = "${fieldMappings.metrics[0]?.name || 'undefined'}"</li>`;
-    html += `<li>Color: fieldMappings.dimensions[1]?.name = "${fieldMappings.dimensions[1]?.name || 'undefined'}"</li>`;
-    html += `</ul>`;
-    html += `<p><strong>📈 Line Chart:</strong></p>`;
-    html += `<ul style="margin: 0 0 10px 20px;">`;
-    html += `<li>X-axis: fieldMappings.dimensions[0]?.name</li>`;
-    html += `<li>Y-axis: fieldMappings.metrics[0]?.name</li>`;
-    html += `<li>Series: fieldMappings.dimensions[1]?.name</li>`;
-    html += `</ul>`;
-    html += `<p><strong>🥧 Pie Chart:</strong></p>`;
-    html += `<ul style="margin: 0;">`;
-    html += `<li>Label: fieldMappings.dimensions[0]?.name</li>`;
-    html += `<li>Value: fieldMappings.metrics[0]?.name</li>`;
-    html += `</ul>`;
-    html += `</div>`;
-    html += `</div>`;
-    
-    // Collapsible raw data for debugging
-    html += '<details style="margin: 10px 0;"><summary>🔍 Raw Data Structure (for debugging)</summary>';
-    html += `<pre style="background: #f5f5f5; padding: 10px; overflow: auto; font-size: 11px;">${JSON.stringify(data, null, 2)}</pre>`;
-    html += '</details>';
-    
-    container.innerHTML = html;
-    console.log('✅ Visualization rendered successfully');
-  
-  // CRITICAL: Signal to Looker Studio that rendering is complete
-  if (window.google && window.google.lookerstudio && window.google.lookerstudio.done) {
-    window.google.lookerstudio.done();
-    console.log('📡 Signaled rendering complete to Looker Studio');
-  }
+      
+      html += `
+            </tbody>
+          </table>
+          
+          <div style="margin-top: 15px; padding: 10px; background-color: #e8f5e8; border: 1px solid #4caf50; border-radius: 4px;">
+            <strong>✅ Success!</strong> Data loaded and rendered successfully using the Looker Studio Community Visualization API.
+          </div>
+        </div>
+      `;
+      
+      container.innerHTML = html;
+      console.log('✅ Visualization rendered successfully');
+      
+    } else {
+      // If we don't have the expected data format, show what we got
+      console.log('⚠️ No recognizable table data found');
+      console.log('⚠️ Full data structure:', JSON.stringify(data, null, 2));
+      
+      showTestData();
+    }
     
   } catch (error) {
     console.error('❌ Error in drawViz:', error);
-    container.innerHTML = `<div style="padding: 20px; color: red;">Error: ${error.message}</div>`;
+    console.error('❌ Error stack:', error.stack);
+    showTestData();
   }
 }
 
-// Standard community visualization initialization
-console.log('🔧 Setting up DSCC subscription...');
-
-// Wait for DSCC to be available
-function initVisualization() {
-  console.log('🚀 Initializing visualization...');
-  
-  // USE THE REAL LOOKER STUDIO API!
-  if (window.google && window.google.lookerstudio && window.google.lookerstudio.registerVisualization) {
-    console.log('🎉 FOUND REAL LOOKER STUDIO API! Using registerVisualization...');
-    
-    const ls = window.google.lookerstudio;
-    
-    // This is the CORRECT modern Looker Studio pattern
-    ls.registerVisualization(drawViz, ls.objectTransform);
-    
-    console.log('✅ Successfully registered with google.lookerstudio.registerVisualization');
-    console.log('🎯 Waiting for data from Looker Studio...');
-    
-    // Signal to Looker Studio that we're done initializing
-    if (ls.done) {
-      ls.done();
-      console.log('📡 Signaled render complete to Looker Studio');
-    }
-    
-    return;
-  }
-  
-  // Fallback to DSCC pattern (older)
-  if (typeof window.dscc !== 'undefined' && window.dscc.subscribeToData) {
-    console.log('✅ Fallback: Using DSCC pattern');
-    
-    window.dscc.subscribeToData(drawViz, {
-      transform: window.dscc.objectTransform
-    });
-    
-    console.log('🎉 Successfully subscribed to DSCC data');
-  } else {
-    console.log('⚠️ No data API found - using test data');
-    setTimeout(showTestData, 1000);
-  }
-}
-
+// Test data fallback
 function showTestData() {
   console.log('🧪 Showing test data...');
   
-  const testData = {
-    fields: {
-      dimension: [{ id: 'dimension', name: 'Test Dimension' }],
-      metric: [{ id: 'metric', name: 'Test Metric' }]
-    },
-    tables: {
-      DEFAULT: [
-        { dimension: 'Category A', metric: 100 },
-        { dimension: 'Category B', metric: 250 },
-        { dimension: 'Category C', metric: 175 },
-        { dimension: 'Category D', metric: 300 }
-      ]
-    }
-  };
-  
-  drawViz(testData);
+  const container = document.getElementById('container') || document.body;
+  container.innerHTML = `
+    <div style="padding: 20px; font-family: Arial, sans-serif;">
+      <h3>🧪 Test Mode</h3>
+      <p>No live data received. Showing sample data for testing.</p>
+      <table style="border-collapse: collapse; width: 100%; border: 1px solid #ddd;">
+        <thead>
+          <tr style="background-color: #f5f5f5;">
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Test Dimension</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: right;">Test Metric</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background-color: #ffffff;">
+            <td style="border: 1px solid #ddd; padding: 12px;">Category A</td>
+            <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold;">100</td>
+          </tr>
+          <tr style="background-color: #f9f9f9;">
+            <td style="border: 1px solid #ddd; padding: 12px;">Category B</td>
+            <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold;">200</td>
+          </tr>
+          <tr style="background-color: #ffffff;">
+            <td style="border: 1px solid #ddd; padding: 12px;">Category C</td>
+            <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold;">150</td>
+          </tr>
+          <tr style="background-color: #f9f9f9;">
+            <td style="border: 1px solid #ddd; padding: 12px;">Category D</td>
+            <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold;">300</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
-// Run environment inspection immediately
-inspectEnvironment();
+// Initialize using the postMessage pattern that was actually working
+console.log('🔧 Setting up DSCC subscription...');
 
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initVisualization);
-} else {
-  initVisualization();
+// Listen for postMessage from parent window (this was the working pattern!)
+window.addEventListener('message', function(event) {
+  console.log('📨 Received message from parent:', event);
+  console.log('📊 Message data looks like:', event.data);
+  if (event.data && typeof event.data === 'object') {
+    console.log('🎉 Found data in message! Trying to visualize...');
+    drawViz(event.data);
+  }
+});
+
+// Signal to parent that we're ready
+console.log('📡 Signaling ready to parent window...');
+try {
+  if (window.parent) {
+    window.parent.postMessage({type: 'ready'}, '*');
+  }
+} catch (e) {
+  console.log('⚠️ Could not signal parent (normal in iframe)');
 }
 
-// Also run inspection after a delay to catch late-loading items
-setTimeout(inspectEnvironment, 2000);
-setTimeout(inspectEnvironment, 5000);
+// Also try the new API if available, but don't rely on it
+if (window.google?.lookerstudio?.registerVisualization) {
+  console.log('🔍 Trying new Looker Studio API as backup...');
+  try {
+    // Try without objectTransform first
+    window.google.lookerstudio.registerVisualization(drawViz);
+    console.log('✅ Registered with new API (no transform)');
+  } catch (e) {
+    console.log('⚠️ New API failed:', e.message);
+  }
+}
+
+// Fallback: show test data after delay if no real data comes
+setTimeout(() => {
+  const container = document.getElementById('container') || document.body;
+  if (!container.innerHTML.trim()) {
+    console.log('⚠️ No data received after 5 seconds - showing test data');
+    showTestData();
+  }
+}, 5000);
 
 console.log('📄 Test visualization script loaded');

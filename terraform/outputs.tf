@@ -1,10 +1,10 @@
 output "looker_manifest_paths" {
-  description = "Manifest paths to use in Looker Studio"
-  value = [
-    "gs://${google_storage_bucket.viz.name}/viz-bar",
-    "gs://${google_storage_bucket.viz.name}/viz-line",
-    "gs://${google_storage_bucket.viz.name}/viz-test",
-  ]
+  description = "Folder URLs to use in Looker Studio (Looker Studio looks for manifest.json inside these folders)"
+  value = {
+    bar_chart = "gs://${google_storage_bucket.viz.name}/viz-bar"
+    line_chart = "gs://${google_storage_bucket.viz.name}/viz-line"
+    test_viz = "gs://${google_storage_bucket.viz.name}/viz-test"
+  }
 }
 
 

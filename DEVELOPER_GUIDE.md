@@ -757,6 +757,14 @@ your-visualization/
 └── README.md          # Documentation
 ```
 
+### **Looker Studio URL Format**
+
+```
+gs://your-bucket/your-visualization-folder
+```
+
+**Note**: Looker Studio expects a **folder URL**, not a manifest.json file URL. It automatically looks for `manifest.json` inside the folder.
+
 ### **Testing Checklist**
 
 - ✅ Visualization loads without errors
