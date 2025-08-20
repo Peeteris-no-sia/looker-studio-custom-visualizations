@@ -1,17 +1,52 @@
 {
   "data": [
     {
-      "id": "data",
+      "id": "concepts",
       "label": "Data",
       "elements": [
-        {"id": "x", "label": "X (category/time)", "type": "DIMENSION", "options": {"min": 1, "max": 1}},
-        {"id": "y", "label": "Value", "type": "METRIC", "options": {"min": 1, "max": 1}},
-        {"id": "series", "label": "Series (optional)", "type": "DIMENSION", "options": {"min": 0, "max": 1}}
+        {
+          "id": "dimension",
+          "label": "X-Axis (Time/Category)",
+          "type": "DIMENSION",
+          "options": {
+            "min": 1,
+            "max": 1
+          }
+        },
+        {
+          "id": "metric",
+          "label": "Value", 
+          "type": "METRIC",
+          "options": {
+            "min": 1,
+            "max": 1
+          }
+        },
+        {
+          "id": "series",
+          "label": "Series (Lines)",
+          "type": "DIMENSION",
+          "options": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        {
+          "id": "color",
+          "label": "Color",
+          "type": "DIMENSION",
+          "options": {
+            "min": 0,
+            "max": 1
+          }
+        }
       ]
     }
   ],
   "style": [],
-  "features": {"enableComparisonDateRange": false}
+  "features": {
+    "enableComparisonDateRange": false
+  }
 }
 
 

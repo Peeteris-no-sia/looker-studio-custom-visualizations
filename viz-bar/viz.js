@@ -3,6 +3,56 @@
 
 console.log('🚀 Bar Chart Loading...');
 
+// Color validation helper functions
+function isValidHexColor(color) {
+  // Check for hex color format: #RRGGBB or #RGB
+  const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+  return hexRegex.test(color);
+}
+
+function isValidCssColor(color) {
+  // Check if it's a valid CSS named color
+  const cssColors = [
+    'red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink', 'brown', 'black', 'white', 'gray', 'grey',
+    'cyan', 'magenta', 'lime', 'maroon', 'navy', 'olive', 'teal', 'silver', 'aqua', 'fuchsia',
+    'darkred', 'darkgreen', 'darkblue', 'darkorange', 'darkviolet', 'lightblue', 'lightgreen', 'lightgray',
+    'steelblue', 'royalblue', 'mediumblue', 'lightcoral', 'palegreen', 'gold', 'crimson', 'indigo'
+  ];
+  return cssColors.includes(color.toLowerCase());
+}
+
+function validateAndCleanColor(color) {
+  if (!color) return null;
+  
+  const cleanColor = String(color).trim();
+  
+  // Try as hex color
+  if (isValidHexColor(cleanColor)) {
+    return cleanColor;
+  }
+  
+  // Try as CSS named color
+  if (isValidCssColor(cleanColor)) {
+    return cleanColor.toLowerCase();
+  }
+  
+  // Try as RGB/RGBA
+  if (cleanColor.startsWith('rgb')) {
+    return cleanColor;
+  }
+  
+  // Try to parse as hex without #
+  if (/^[A-Fa-f0-9]{6}$/.test(cleanColor)) {
+    return '#' + cleanColor;
+  }
+  
+  if (/^[A-Fa-f0-9]{3}$/.test(cleanColor)) {
+    return '#' + cleanColor;
+  }
+  
+  return null;
+}
+
 function drawViz(data) {
   console.log('🎯 drawViz called with data:', data);
   
@@ -231,6 +281,21 @@ function renderBarChart(tableData, categoryField, valueField, colorField) {
   const valueRange = maxValue - minValue;
   
   console.log('📊 Data processed:', { categories: categories.length, maxValue, minValue });
+  
+  // Debug color field processing
+  if (colorField) {
+    const colorValues = tableData.map(row => row[colorField]).filter(Boolean);
+    const uniqueColorValues = [...new Set(colorValues)];
+    console.log('🎨 Color field analysis:', {
+      field: colorField,
+      uniqueValues: uniqueColorValues,
+      validColors: uniqueColorValues.map(color => ({
+        original: color,
+        validated: validateAndCleanColor(color),
+        isValid: !!validateAndCleanColor(color)
+      }))
+    });
+  }
 
   // Clean color palette
   const colors = ['#4285f4', '#34a853', '#ea4335', '#fbbc04', '#ff6d01', '#9aa0a6', '#ab47bc', '#00acc1'];
@@ -254,13 +319,21 @@ function renderBarChart(tableData, categoryField, valueField, colorField) {
       
       const barX = categoryIndex * (barGroupWidth + barGroupSpacing) + (barIndex * barWidth);
       
-      // Choose color
+      // Choose color - Enhanced to support hex codes and better color mapping
       let barColor = colors[categoryIndex % colors.length];
+      
       if (colorField && dataPoint.color) {
-        // Use different shades for different color values
-        const uniqueColors = [...new Set(tableData.map(r => r[colorField]).filter(Boolean))];
-        const colorIndex = uniqueColors.indexOf(dataPoint.color);
-        barColor = colors[colorIndex % colors.length];
+        const validColor = validateAndCleanColor(dataPoint.color);
+        
+        if (validColor) {
+          // Use the validated color (hex, CSS name, or RGB)
+          barColor = validColor;
+        } else {
+          // Fallback: use consistent color mapping for string values
+          const uniqueColors = [...new Set(tableData.map(r => r[colorField]).filter(Boolean))];
+          const colorIndex = uniqueColors.indexOf(String(dataPoint.color));
+          barColor = colors[colorIndex % colors.length];
+        }
       }
 
       // Create bar rectangle

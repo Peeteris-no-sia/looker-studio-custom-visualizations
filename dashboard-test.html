@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Looker Studio Dashboard Test - Custom Visualizations</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4285f4, #1a73e8);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .dashboard-controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .controls-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #5f6368;
+            text-transform: uppercase;
+        }
+        
+        .control-group button,
+        .control-group select {
+            padding: 8px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .control-group button:hover {
+            background: #f1f3f4;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-loaded {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .dashboard-iframe-container {
+            position: relative;
+            width: 100%;
+            height: 800px;
+            border: none;
+            background: #f5f5f5;
+        }
+        
+        .dashboard-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #4285f4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .debug-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .debug-section {
+            margin-bottom: 20px;
+        }
+        
+        .debug-section h3 {
+            margin: 0 0 10px 0;
+            color: #202124;
+            font-size: 16px;
+        }
+        
+        .debug-log {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .custom-viz-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .viz-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .viz-card h4 {
+            margin: 0 0 10px 0;
+            color: #1a73e8;
+            font-size: 14px;
+        }
+        
+        .viz-card .manifest-url {
+            font-family: monospace;
+            font-size: 11px;
+            background: #f1f3f4;
+            padding: 4px 8px;
+            border-radius: 3px;
+            word-break: break-all;
+        }
+        
+        .viz-status {
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .viz-status.working {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .viz-status.updating {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .resize-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .resize-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: 1px solid #dadce0;
+            background: white;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .resize-btn:hover {
+            background: #f1f3f4;
+        }
+        
+        .resize-btn.active {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Looker Studio Dashboard Test</h1>
+            <p>Testing custom visualizations with embedded dashboard</p>
+        </div>
+        
+        <div class="dashboard-controls">
+            <div class="controls-section">
+                <div class="control-group">
+                    <label>Dashboard Status</label>
+                    <div id="status-indicator" class="status-indicator status-loading">
+                        <span>🔄</span>
+                        <span>Loading...</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Dashboard Size</label>
+                    <div class="resize-controls">
+                        <button class="resize-btn active" onclick="resizeDashboard('100%', '800px')">Full</button>
+                        <button class="resize-btn" onclick="resizeDashboard('1200px', '700px')">Desktop</button>
+                        <button class="resize-btn" onclick="resizeDashboard('768px', '600px')">Tablet</button>
+                        <button class="resize-btn" onclick="resizeDashboard('375px', '500px')">Mobile</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Actions</label>
+                    <button onclick="reloadDashboard()">🔄 Reload</button>
+                    <button onclick="openFullDashboard()">🔗 Open Full</button>
+                    <button onclick="toggleDebug()">🔍 Debug</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-iframe-container" id="dashboard-container">
+            <div class="loading-overlay" id="loading-overlay">
+                <div class="loading-spinner"></div>
+                <p>Loading Looker Studio Dashboard...</p>
+                <small>This may take a moment</small>
+            </div>
+            
+            <iframe 
+                id="dashboard-iframe"
+                class="dashboard-iframe"
+                src="https://lookerstudio.google.com/embed/reporting/7986cc3e-beb7-4e83-9a54-231080444d1b/page/p3GUF"
+                frameborder="0"
+                style="border:0"
+                allowfullscreen
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms">
+            </iframe>
+        </div>
+        
+        <div class="debug-panel" id="debug-panel" style="display: none;">
+            <div class="debug-section">
+                <h3>📊 Custom Visualizations Status</h3>
+                <div class="custom-viz-info">
+                    <div class="viz-card">
+                        <h4>🧪 Test Visualization</h4>
+                        <div class="manifest-url">gs://darbnesis-viz-assets/viz-test</div>
+                        <div class="viz-status working">✅ Working - Reference Implementation</div>
+                    </div>
+                    <div class="viz-card">
+                        <h4>📊 Bar Chart</h4>
+                        <div class="manifest-url">gs://darbnesis-viz-assets/viz-bar</div>
+                        <div class="viz-status updating">🔄 Updated with working patterns</div>
+                    </div>
+                    <div class="viz-card">
+                        <h4>📈 Line Chart</h4>
+                        <div class="manifest-url">gs://darbnesis-viz-assets/viz-line</div>
+                        <div class="viz-status updating">🔄 To be updated</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="debug-section">
+                <h3>🔍 Debug Information</h3>
+                <div class="debug-log" id="debug-log">
+Dashboard loading started...
+Iframe source: https://lookerstudio.google.com/embed/reporting/7986cc3e-beb7-4e83-9a54-231080444d1b/page/p3GUF
+
+Custom Visualization Manifest URLs:
+• Test Viz: gs://darbnesis-viz-assets/viz-test
+• Bar Chart: gs://darbnesis-viz-assets/viz-bar  
+• Line Chart: gs://darbnesis-viz-assets/viz-line
+
+To test custom visualizations:
+1. Add Chart → Community Visualizations
+2. Use the manifest URLs above
+3. Check browser console for debug logs
+4. Look for messages starting with [VIZ-TEST-DEBUG] or [VIZ-BAR-DEBUG]
+
+Waiting for dashboard to load...
+                </div>
+            </div>
+            
+            <div class="debug-section">
+                <h3>🛠️ Quick Actions</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="clearDebugLog()">Clear Log</button>
+                    <button onclick="checkCustomVizFiles()">Check Viz Files</button>
+                    <button onclick="testManifestUrls()">Test Manifest URLs</button>
+                    <button onclick="exportDebugInfo()">Export Debug Info</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dashboard management
+        let dashboardLoaded = false;
+        let debugMode = false;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            logDebug('Page loaded, setting up dashboard test...');
+            setupDashboardMonitoring();
+        });
+        
+        function setupDashboardMonitoring() {
+            const iframe = document.getElementById('dashboard-iframe');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const statusIndicator = document.getElementById('status-indicator');
+            
+            // Monitor iframe load
+            iframe.addEventListener('load', function() {
+                dashboardLoaded = true;
+                loadingOverlay.style.display = 'none';
+                statusIndicator.className = 'status-indicator status-loaded';
+                statusIndicator.innerHTML = '<span>✅</span><span>Loaded</span>';
+                logDebug('Dashboard iframe loaded successfully');
+            });
+            
+            iframe.addEventListener('error', function() {
+                loadingOverlay.style.display = 'none';
+                statusIndicator.className = 'status-indicator status-error';
+                statusIndicator.innerHTML = '<span>❌</span><span>Error</span>';
+                logDebug('Dashboard iframe failed to load');
+            });
+            
+            // Timeout fallback
+            setTimeout(() => {
+                if (!dashboardLoaded) {
+                    loadingOverlay.style.display = 'none';
+                    statusIndicator.className = 'status-indicator status-error';
+                    statusIndicator.innerHTML = '<span>⚠️</span><span>Timeout</span>';
+                    logDebug('Dashboard load timeout - this is normal for embedded dashboards');
+                }
+            }, 15000);
+        }
+        
+        function resizeDashboard(width, height) {
+            const container = document.getElementById('dashboard-container');
+            const iframe = document.getElementById('dashboard-iframe');
+            
+            container.style.width = width;
+            container.style.height = height;
+            
+            // Update active button
+            document.querySelectorAll('.resize-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            logDebug(`Dashboard resized to ${width} x ${height}`);
+        }
+        
+        function reloadDashboard() {
+            const iframe = document.getElementById('dashboard-iframe');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const statusIndicator = document.getElementById('status-indicator');
+            
+            dashboardLoaded = false;
+            loadingOverlay.style.display = 'flex';
+            statusIndicator.className = 'status-indicator status-loading';
+            statusIndicator.innerHTML = '<span>🔄</span><span>Reloading...</span>';
+            
+            iframe.src = iframe.src;
+            logDebug('Dashboard reload initiated');
+        }
+        
+        function openFullDashboard() {
+            const fullUrl = 'https://lookerstudio.google.com/u/0/reporting/7986cc3e-beb7-4e83-9a54-231080444d1b/page/p3GUF';
+            window.open(fullUrl, '_blank');
+            logDebug('Opened full dashboard in new tab');
+        }
+        
+        function toggleDebug() {
+            const debugPanel = document.getElementById('debug-panel');
+            debugMode = !debugMode;
+            debugPanel.style.display = debugMode ? 'block' : 'none';
+            logDebug(`Debug mode ${debugMode ? 'enabled' : 'disabled'}`);
+        }
+        
+        // Debug functions
+        function logDebug(message) {
+            const timestamp = new Date().toISOString().substr(11, 12);
+            const debugLog = document.getElementById('debug-log');
+            debugLog.textContent += `[${timestamp}] ${message}\n`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(`[DASHBOARD-TEST] ${message}`);
+        }
+        
+        function clearDebugLog() {
+            document.getElementById('debug-log').textContent = 'Debug log cleared...\n';
+        }
+        
+        async function checkCustomVizFiles() {
+            logDebug('Checking custom visualization files...');
+            
+            const vizUrls = [
+                'https://storage.googleapis.com/darbnesis-viz-assets/viz-test/manifest.json',
+                'https://storage.googleapis.com/darbnesis-viz-assets/viz-bar/manifest.json',
+                'https://storage.googleapis.com/darbnesis-viz-assets/viz-line/manifest.json'
+            ];
+            
+            for (const url of vizUrls) {
+                try {
+                    const response = await fetch(url, { method: 'HEAD' });
+                    const status = response.ok ? '✅' : '❌';
+                    logDebug(`${status} ${url} - Status: ${response.status}`);
+                } catch (error) {
+                    logDebug(`❌ ${url} - Error: ${error.message}`);
+                }
+            }
+        }
+        
+        async function testManifestUrls() {
+            logDebug('Testing manifest URLs for Looker Studio...');
+            
+            const manifestUrls = [
+                'gs://darbnesis-viz-assets/viz-test',
+                'gs://darbnesis-viz-assets/viz-bar',
+                'gs://darbnesis-viz-assets/viz-line'
+            ];
+            
+            manifestUrls.forEach(url => {
+                logDebug(`📋 Copy this URL for Looker Studio: ${url}`);
+            });
+            
+            logDebug('Instructions:');
+            logDebug('1. In your dashboard, click "Add Chart"');
+            logDebug('2. Select "Community Visualizations"');
+            logDebug('3. Click "Explore more" → "Build your own visualization"');
+            logDebug('4. Paste one of the gs:// URLs above');
+            logDebug('5. Check browser console for debug messages');
+        }
+        
+        function exportDebugInfo() {
+            const debugContent = document.getElementById('debug-log').textContent;
+            const blob = new Blob([debugContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dashboard-debug-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            logDebug('Debug info exported to file');
+        }
+        
+        // Listen for messages from iframe (advanced debugging)
+        window.addEventListener('message', function(event) {
+            if (event.origin.includes('lookerstudio.google.com') || event.origin.includes('datastudio.google.com')) {
+                logDebug(`Message from Looker Studio: ${JSON.stringify(event.data)}`);
+            }
+        });
+        
+        // Log initial setup info
+        setTimeout(() => {
+            logDebug('=== Dashboard Test Setup Complete ===');
+            logDebug('Dashboard URL: https://lookerstudio.google.com/u/0/reporting/7986cc3e-beb7-4e83-9a54-231080444d1b/page/p3GUF');
+            logDebug('Custom Viz Bucket: gs://darbnesis-viz-assets/');
+            logDebug('Test Visualization: gs://darbnesis-viz-assets/viz-test (✅ Working)');
+            logDebug('Bar Chart: gs://darbnesis-viz-assets/viz-bar (🔄 Updated)');
+            logDebug('Line Chart: gs://darbnesis-viz-assets/viz-line (🔄 Needs update)');
+            logDebug('=== Ready for Testing ===');
+        }, 1000);
+    </script>
+</body>
+</html>

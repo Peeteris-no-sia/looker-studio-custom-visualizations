@@ -1,141 +1,674 @@
-// @ts-nocheck
-(function(){
-const dscc = window.dscc;
-const NS='http://www.w3.org/2000/svg';
-const PALETTE=['#119d9d','#48aeb3','#1a686c','#8cd7d6','#4d6063'];
-const SHOW_LEGEND = true;
+// 📈 Line Chart with Series and Color Field - WORKING SOLUTION
+// Using the REAL Looker Studio API patterns discovered in 2024
 
-function setFont(el, size, weight, color){ if(size!=null) el.setAttribute('font-size',String(size)); if(weight) el.setAttribute('font-weight',String(weight)); if(color) el.setAttribute('fill',color); el.setAttribute('font-family','Ubuntu,Roboto,system-ui,Arial,sans-serif'); }
+console.log('🚀 Line Chart Loading...');
 
-function ensureShadowDef(svg, scale){
-  const DEF_ID='legendShadow';
-  let defs=svg.querySelector('defs');
-  if(!defs){ defs=document.createElementNS(NS,'defs'); svg.insertBefore(defs, svg.firstChild||null); }
-  let filt=svg.querySelector('#'+DEF_ID);
-  if(!filt){
-    filt=document.createElementNS(NS,'filter');
-    filt.setAttribute('id',DEF_ID);
-    filt.setAttribute('x','-20%'); filt.setAttribute('y','-20%'); filt.setAttribute('width','140%'); filt.setAttribute('height','140%');
-    const fe=document.createElementNS(NS,'feDropShadow');
-    fe.setAttribute('dx', String(Math.max(0.5, Math.round(1*scale))));
-    fe.setAttribute('dy', String(Math.max(0.5, Math.round(1*scale))));
-    fe.setAttribute('stdDeviation', String(Math.max(0.5, Math.round(2*scale))));
-    fe.setAttribute('flood-color','#000000');
-    fe.setAttribute('flood-opacity','0.12');
-    filt.appendChild(fe);
-    defs.appendChild(filt);
-  }
-  return 'url(#'+DEF_ID+')';
+// Color validation helper functions (same as bar chart)
+function isValidHexColor(color) {
+  // Check for hex color format: #RRGGBB or #RGB
+  const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+  return hexRegex.test(color);
 }
 
-function draw(data){
-  const root=document.getElementById('root'); root.innerHTML='';
-  const W=(dscc&&dscc.getWidth? dscc.getWidth(): root.clientWidth||900);
-  const H=(dscc&&dscc.getHeight? dscc.getHeight(): root.clientHeight||350);
-  const scale=Math.max(0.75,Math.min(3,Math.min(W/900,H/350)));
-  const m={t:Math.round(24*scale), r:Math.round(28*scale), b:Math.round(80*scale), l:Math.round(90*scale)};
-  const w=W-m.l-m.r, h=H-m.t-m.b;
+function isValidCssColor(color) {
+  // Check if it's a valid CSS named color
+  const cssColors = [
+    'red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink', 'brown', 'black', 'white', 'gray', 'grey',
+    'cyan', 'magenta', 'lime', 'maroon', 'navy', 'olive', 'teal', 'silver', 'aqua', 'fuchsia',
+    'darkred', 'darkgreen', 'darkblue', 'darkorange', 'darkviolet', 'lightblue', 'lightgreen', 'lightgray',
+    'steelblue', 'royalblue', 'mediumblue', 'lightcoral', 'palegreen', 'gold', 'crimson', 'indigo'
+  ];
+  return cssColors.includes(color.toLowerCase());
+}
 
-  const svg=document.createElementNS(NS,'svg'); svg.setAttribute('width',W); svg.setAttribute('height',H); root.appendChild(svg);
+function validateAndCleanColor(color) {
+  if (!color) return null;
+  
+  const cleanColor = String(color).trim();
+  
+  // Try as hex color
+  if (isValidHexColor(cleanColor)) {
+    return cleanColor;
+  }
+  
+  // Try as CSS named color
+  if (isValidCssColor(cleanColor)) {
+    return cleanColor.toLowerCase();
+  }
+  
+  // Try as RGB/RGBA
+  if (cleanColor.startsWith('rgb')) {
+    return cleanColor;
+  }
+  
+  // Try to parse as hex without #
+  if (/^[A-Fa-f0-9]{6}$/.test(cleanColor)) {
+    return '#' + cleanColor;
+  }
+  
+  if (/^[A-Fa-f0-9]{3}$/.test(cleanColor)) {
+    return '#' + cleanColor;
+  }
+  
+  return null;
+}
 
-  // Transform rows to series keyed by Series or single series
-  const rows=(data.tables&&data.tables.DEFAULT)||[];
-  const seriesKey= r=> r.Series!=null? String(r.Series): 'Series';
-  const xKey= r=> String(r.X);
-  const groups={};
-  rows.forEach((r)=>{ const k=seriesKey(r); if(!groups[k]) groups[k]=[]; groups[k].push({x:xKey(r), y:+r.Value}); });
-  const seriesNames=Object.keys(groups);
-  // X domain order by first appearance
-  const xOrder=[]; rows.forEach(r=>{ const xv=xKey(r); if(!xOrder.includes(xv)) xOrder.push(xv); });
-  const xIndex={}; xOrder.forEach((x,i)=> xIndex[x]=i);
+function drawViz(data) {
+  console.log('🎯 drawViz called with data:', data);
+  
+  // Get or create container (same as bar chart)
+  let container = document.getElementById('container');
+  if (!container) {
+    console.log('📦 Creating container element...');
+    container = document.createElement('div');
+    container.id = 'container';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    document.body.appendChild(container);
+  }
+  
+  // Clear any existing content
+  container.innerHTML = '';
 
-  const stepX=w/Math.max(1,xOrder.length-1);
-  const maxY=Math.max(1, ...rows.map(r=>+r.Value||0));
+  try {
+    console.log('🔍 Data type:', typeof data);
+    console.log('🔍 Data keys:', data ? Object.keys(data) : 'data is null');
+    console.log('🔍 Data.dataResponse exists:', !!data?.dataResponse);
 
-  // Gridlines (horizontal) and y ticks
-  const approxTicks=8; const niceMax=Math.ceil(maxY*1.15); const tickStep=Math.max(1,Math.ceil(niceMax/approxTicks));
-  const ticks=[]; for(let t=0;t<=niceMax;t+=tickStep) ticks.push(t);
-  const dash=Math.max(2,Math.round(6*scale)); const strokeW=Math.max(1,Math.round(2*scale));
-  ticks.forEach(t=>{ const yy=m.t + h - (t/niceMax)*h; const line=document.createElementNS(NS,'line'); line.setAttribute('x1',m.l); line.setAttribute('x2',m.l+w); line.setAttribute('y1',yy); line.setAttribute('y2',yy); line.setAttribute('stroke','#C0C0C0'); line.setAttribute('stroke-dasharray',`${dash} ${dash}`); line.setAttribute('stroke-width',String(strokeW)); svg.appendChild(line); const tx=document.createElementNS(NS,'text'); tx.setAttribute('x',m.l- Math.round(12*scale)); tx.setAttribute('y',yy+ Math.round(5*scale)); tx.setAttribute('text-anchor','end'); setFont(tx, Math.round(22*scale), null, '#404040'); tx.textContent=String(t); svg.appendChild(tx); });
-
-  // Axes labels (x labels)
-  xOrder.forEach((x,i)=>{ const tx=document.createElementNS(NS,'text'); const px=m.l + i*stepX; tx.setAttribute('x',px); tx.setAttribute('y',m.t+h+ Math.round(28*scale)); tx.setAttribute('text-anchor','middle'); setFont(tx, Math.round(18*scale), null, '#333'); tx.textContent=x; svg.appendChild(tx); });
-
-  // Optional legend for series
-  if (SHOW_LEGEND && seriesNames.length>0){
-    const fsLegend = Math.round(16*scale), sw = Math.round(14*scale), padX=Math.round(10*scale), padY=Math.round(8*scale), gap=Math.round(18*scale);
-    const legendWrap=document.createElementNS(NS,'g');
-    const legend=document.createElementNS(NS,'g');
-    const legendOffsetX = Math.round(16*scale);
-    let xCur=m.l + legendOffsetX, yCur=Math.max(0, m.t - Math.round(10*scale));
-    seriesNames.forEach((name,si)=>{
-      const color=PALETTE[si%PALETTE.length];
-      const g=document.createElementNS(NS,'g');
-      const r=document.createElementNS(NS,'rect'); r.setAttribute('x',xCur); r.setAttribute('y',yCur); r.setAttribute('width',sw); r.setAttribute('height',sw); r.setAttribute('rx',Math.round(3*scale)); r.setAttribute('fill',color); g.appendChild(r);
-      const tx=document.createElementNS(NS,'text'); tx.setAttribute('x',xCur+sw+padX); tx.setAttribute('y',yCur+Math.round(sw*0.78)); tx.setAttribute('text-anchor','start'); setFont(tx,fsLegend,700,'#333'); tx.textContent=name; g.appendChild(tx);
-      legend.appendChild(g);
-      const approxW=Math.max(sw, Math.round(tx.textContent.length*fsLegend*0.6));
-      xCur += sw+padX+approxW+gap; if(xCur>m.l+legendOffsetX+w){ xCur=m.l+legendOffsetX; yCur+=sw+padY; }
-    });
-    legendWrap.appendChild(legend);
-    svg.appendChild(legendWrap);
-    // White rounded background for legend, matching bar visual
-    const lb=legend.getBBox();
-    const bg=document.createElementNS(NS,'rect');
-    const padBGx=Math.round(10*scale), padBGy=Math.round(6*scale);
-    bg.setAttribute('x', lb.x - padBGx);
-    bg.setAttribute('y', lb.y - padBGy);
-    bg.setAttribute('width', lb.width + padBGx*2);
-    bg.setAttribute('height', lb.height + padBGy*2);
-    bg.setAttribute('rx', Math.round(10*scale));
-    bg.setAttribute('fill', '#ffffff');
-    bg.setAttribute('stroke', '#d0d0d0');
-    bg.setAttribute('stroke-width', String(Math.max(1, Math.round(2*scale))));
-    bg.setAttribute('filter', ensureShadowDef(svg, scale));
-    bg.setAttribute('pointer-events','none');
-    legendWrap.insertBefore(bg, legendWrap.firstChild);
-    // Remeasure after layout for stability
-    const remeasure=(attempt=1)=>{
-      requestAnimationFrame(()=>{
-        const lb2=legend.getBBox();
-        bg.setAttribute('x', lb2.x - padBGx);
-        bg.setAttribute('y', lb2.y - padBGy);
-        bg.setAttribute('width', lb2.width + padBGx*2);
-        bg.setAttribute('height', lb2.height + padBGy*2);
-        if(attempt<3 && (lb2.width===0 || lb2.height===0)) remeasure(attempt+1);
+    // Extract data - handle the REAL Looker Studio format!
+    if (data && data.dataResponse && data.dataResponse.tables && data.fields) {
+      console.log('🎉 Found REAL Looker Studio data format!');
+      
+      // Extract data from data.dataResponse.tables[0].rows (the REAL path!)
+      const rows = data.dataResponse.tables[0].rows;
+      const fieldIds = data.dataResponse.tables[0].fields;
+      
+      console.log('📊 Raw rows:', rows);
+      console.log('📊 Field IDs:', fieldIds);
+      
+      // Create field mapping from IDs to names using data.fields
+      const fieldsMap = {};
+      data.fields.forEach(field => {
+        fieldsMap[field.id] = field.name;
       });
-    };
-    remeasure();
-    // Keep legend above other content
-    svg.appendChild(legendWrap);
+      console.log('📊 Fields map:', fieldsMap);
+      
+      // Convert row arrays to objects with field names
+      const tableData = rows.map(row => {
+        const rowObj = {};
+        fieldIds.forEach((fieldId, index) => {
+          const fieldName = fieldsMap[fieldId];
+          rowObj[fieldName] = row[index];
+        });
+        return rowObj;
+      });
+      
+      console.log('📊 Converted table data:', tableData);
+      
+      // Create field mappings by concept type for flexible field access
+      const fieldMappings = {
+        dimensions: [],
+        metrics: [],
+        allFields: {}
+      };
+      
+      data.fields.forEach(field => {
+        fieldMappings.allFields[field.name] = field;
+        if (field.concept === 'DIMENSION') {
+          fieldMappings.dimensions.push({ id: field.id, name: field.name });
+        } else if (field.concept === 'METRIC') {
+          fieldMappings.metrics.push({ id: field.id, name: field.name });
+        }
+      });
+      
+      console.log('🔍 Field mappings:', fieldMappings);
+      console.log('🔍 Available dimensions:', fieldMappings.dimensions.map(d => d.name));
+      console.log('🔍 Available metrics:', fieldMappings.metrics.map(m => m.name));
+      
+      // Line chart specific field access
+      const xAxisField = fieldMappings.dimensions[0]?.name;      // X-axis (time/category)
+      const valueField = fieldMappings.metrics[0]?.name;         // Y-axis values
+      const seriesField = fieldMappings.dimensions[1]?.name;     // Series grouping (multiple lines)
+      const colorField = fieldMappings.dimensions[2]?.name;      // Color field (for line colors)
+
+      console.log('📈 Line chart fields:', { 
+        xAxis: xAxisField, 
+        value: valueField, 
+        series: seriesField,
+        color: colorField 
+      });
+
+      if (!xAxisField || !valueField) {
+        container.innerHTML = `
+          <div style="padding: 20px; color: #d93025; border: 1px solid #d93025; border-radius: 4px; font-family: Arial, sans-serif;">
+            <h3>⚠️ Missing Required Fields</h3>
+            <p>Line chart requires:</p>
+            <ul>
+              <li><strong>X-Axis Field (Dimension):</strong> ${xAxisField ? '✅ ' + xAxisField : '❌ Not configured'}</li>
+              <li><strong>Value Field (Metric):</strong> ${valueField ? '✅ ' + valueField : '❌ Not configured'}</li>
+              <li><strong>Series Field (Dimension):</strong> ${seriesField ? '✅ ' + seriesField : '⚠️ Optional'}</li>
+              <li><strong>Color Field (Dimension):</strong> ${colorField ? '✅ ' + colorField : '⚠️ Optional'}</li>
+            </ul>
+            <p>Available fields:</p>
+            <ul>
+              <li><strong>Dimensions:</strong> ${fieldMappings.dimensions.map(d => d.name).join(', ') || 'None'}</li>
+              <li><strong>Metrics:</strong> ${fieldMappings.metrics.map(m => m.name).join(', ') || 'None'}</li>
+            </ul>
+            <p>Please configure your fields in Looker Studio.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Render the line chart!
+      renderLineChart(tableData, xAxisField, valueField, seriesField, colorField);
+
+      console.log('✅ Line chart rendered successfully');
+
+    } else {
+      console.log('⚠️ No recognizable data format found');
+      console.log('⚠️ Full data structure:', JSON.stringify(data, null, 2));
+      
+      container.innerHTML = `
+        <div style="padding: 20px; color: #ea4335; border: 1px solid #ea4335; border-radius: 4px; font-family: Arial, sans-serif;">
+          <h3>❌ No Data Available</h3>
+          <p>Unable to find chart data in the expected format.</p>
+          <details>
+            <summary>Technical Details</summary>
+            <pre style="font-size: 12px; overflow: auto; max-height: 200px;">${JSON.stringify(data, null, 2)}</pre>
+          </details>
+        </div>
+      `;
+    }
+
+  } catch (error) {
+    console.error('❌ Error in drawViz:', error);
+    container.innerHTML = `
+      <div style="padding: 20px; color: red; border: 1px solid red; border-radius: 4px;">
+        <h3>❌ Visualization Error</h3>
+        <p>Unable to render line chart: ${error.message}</p>
+        <details>
+          <summary>Technical Details</summary>
+          <pre style="font-size: 12px; overflow: auto;">${error.stack}</pre>
+        </details>
+      </div>
+    `;
+  } finally {
+    // CRITICAL: Signal to Looker Studio that rendering is complete
+    if (window.google && window.google.lookerstudio && window.google.lookerstudio.done) {
+      window.google.lookerstudio.done();
+      console.log('📡 Signaled rendering complete to Looker Studio');
+    }
+  }
+}
+
+function renderLineChart(tableData, xAxisField, valueField, seriesField, colorField) {
+  console.log('🎨 Rendering enhanced line chart...');
+  
+  const container = document.getElementById('container');
+  
+  // Set fixed, good-looking dimensions
+  const containerWidth = 900;
+  const containerHeight = 600;
+  
+  // Chart dimensions with margins for labels and legend
+  const margin = { top: 60, right: 80, bottom: 100, left: 120 };
+  const chartWidth = containerWidth - margin.left - margin.right;
+  const chartHeight = containerHeight - margin.top - margin.bottom;
+  
+  console.log('📐 Chart dimensions:', { chartWidth, chartHeight });
+
+  // Create clean HTML structure
+  container.innerHTML = `
+    <div style="
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      width: ${containerWidth}px;
+      height: ${containerHeight}px;
+      padding: 20px;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin: 20px auto;
+    ">
+      <h3 style="
+        margin: 0 0 20px 0;
+        color: #202124;
+        font-size: 18px;
+        font-weight: 500;
+        text-align: center;
+      ">📈 ${xAxisField} vs ${valueField}${seriesField ? ` (by ${seriesField})` : ''}</h3>
+      <div id="chart-container" style="
+        width: 100%;
+        height: calc(100% - 60px);
+        position: relative;
+        overflow: hidden;
+      "></div>
+    </div>
+  `;
+
+  const chartContainer = document.getElementById('chart-container');
+  
+  // Create SVG
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+  svg.setAttribute('viewBox', `0 0 ${chartWidth + margin.left + margin.right} ${chartHeight + margin.top + margin.bottom}`);
+  svg.style.display = 'block';
+  chartContainer.appendChild(svg);
+
+  // Chart group
+  const chartGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  chartGroup.setAttribute('transform', `translate(${margin.left}, ${margin.top})`);
+  svg.appendChild(chartGroup);
+
+  // Process data - group by series if available
+  const dataGrouped = {};
+  
+  if (seriesField) {
+    // Group by series field
+    tableData.forEach(row => {
+      const seriesValue = row[seriesField] || 'Default';
+      if (!dataGrouped[seriesValue]) {
+        dataGrouped[seriesValue] = [];
+      }
+      dataGrouped[seriesValue].push({
+        x: row[xAxisField],
+        y: parseFloat(row[valueField]) || 0,
+        color: colorField ? row[colorField] : null,
+        originalRow: row
+      });
+    });
+  } else {
+    // Single series
+    dataGrouped['Default'] = tableData.map(row => ({
+      x: row[xAxisField],
+      y: parseFloat(row[valueField]) || 0,
+      color: colorField ? row[colorField] : null,
+      originalRow: row
+    }));
   }
 
-  // Lines per series
-  seriesNames.forEach((name, si)=>{
-    const color=PALETTE[si%PALETTE.length];
-    const pts=groups[name].slice().sort((a,b)=> xIndex[a.x]-xIndex[b.x]).map(p=>({x:m.l + xIndex[p.x]*stepX, y:m.t + h - (p.y/niceMax)*h, v:p.y}));
-    const path=document.createElementNS(NS,'path');
-    let d='';
-    pts.forEach((p,i)=>{ d += (i===0? 'M ':' L ')+p.x+' '+p.y; });
-    // use point diameter for stroke width and round only the joins/caps
-    const markerR = Math.max(3, Math.round(7*scale));
-    const strokeW = markerR*2;
-    path.setAttribute('d',d.trim());
-    path.setAttribute('fill','none');
-    path.setAttribute('stroke',color);
-    path.setAttribute('stroke-width', strokeW);
-    path.setAttribute('stroke-linejoin','round');
-    path.setAttribute('stroke-linecap','round');
-    svg.appendChild(path);
-    // markers and value labels
-    pts.forEach(p=>{ const c=document.createElementNS(NS,'circle'); c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r', markerR ); c.setAttribute('fill',color); svg.appendChild(c); const tx=document.createElementNS(NS,'text'); tx.setAttribute('x',p.x); tx.setAttribute('y',p.y - Math.round(markerR + 6*scale)); tx.setAttribute('text-anchor','middle'); setFont(tx, Math.round(24*scale), 700, '#404040'); tx.textContent=String(Math.round(p.v)); svg.appendChild(tx); });
+  const seriesNames = Object.keys(dataGrouped);
+  
+  // Get unique X values in order of appearance
+  const xValues = [];
+  tableData.forEach(row => {
+    const xVal = row[xAxisField];
+    if (!xValues.includes(xVal)) {
+      xValues.push(xVal);
+    }
+  });
+  
+  // Sort each series by X value order
+  seriesNames.forEach(seriesName => {
+    dataGrouped[seriesName].sort((a, b) => {
+      return xValues.indexOf(a.x) - xValues.indexOf(b.x);
+    });
   });
 
-  // Y axis title
-  const yTitle=document.createElementNS(NS,'text'); yTitle.setAttribute('x', Math.round(34*scale)); yTitle.setAttribute('y', m.t + h/2); yTitle.setAttribute('text-anchor','middle'); setFont(yTitle, Math.round(40*scale), 700, '#333'); yTitle.setAttribute('transform', `rotate(-90,${Math.round(34*scale)},${m.t + h/2})`); yTitle.textContent=(data.fields&&data.fields.Value&&data.fields.Value.label)||'Value'; svg.appendChild(yTitle);
+  const allYValues = Object.values(dataGrouped).flat().map(d => d.y);
+  const maxY = Math.max(...allYValues);
+  const minY = Math.min(0, Math.min(...allYValues));
+  const yRange = maxY - minY;
+
+  console.log('📊 Data processed:', { 
+    series: seriesNames.length, 
+    xValues: xValues.length, 
+    maxY, 
+    minY 
+  });
+  
+  // Debug color field processing
+  if (colorField) {
+    const colorValues = tableData.map(row => row[colorField]).filter(Boolean);
+    const uniqueColorValues = [...new Set(colorValues)];
+    console.log('🎨 Color field analysis:', {
+      field: colorField,
+      uniqueValues: uniqueColorValues,
+      validColors: uniqueColorValues.map(color => ({
+        original: color,
+        validated: validateAndCleanColor(color),
+        isValid: !!validateAndCleanColor(color)
+      }))
+    });
+  }
+
+  // Color palette for series (when no custom colors)
+  const colors = ['#4285f4', '#34a853', '#ea4335', '#fbbc04', '#ff6d01', '#9aa0a6', '#ab47bc', '#00acc1'];
+
+  // Scales
+  const xStep = chartWidth / Math.max(1, xValues.length - 1);
+  const yScale = (y) => chartHeight - ((y - minY) / yRange * chartHeight);
+
+  // Add grid lines
+  const numYTicks = 6;
+  for (let i = 0; i <= numYTicks; i++) {
+    const value = minY + (yRange * i / numYTicks);
+    const y = yScale(value);
+    
+    // Grid line
+    const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    gridLine.setAttribute('x1', 0);
+    gridLine.setAttribute('y1', y);
+    gridLine.setAttribute('x2', chartWidth);
+    gridLine.setAttribute('y2', y);
+    gridLine.setAttribute('stroke', '#f1f3f4');
+    gridLine.setAttribute('stroke-width', '1');
+    chartGroup.appendChild(gridLine);
+    
+    // Y-axis label
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', -15);
+    label.setAttribute('y', y + 4);
+    label.setAttribute('text-anchor', 'end');
+    label.setAttribute('font-family', 'Segoe UI, sans-serif');
+    label.setAttribute('font-size', '12');
+    label.setAttribute('fill', '#5f6368');
+    label.textContent = Math.round(value).toLocaleString();
+    chartGroup.appendChild(label);
+  }
+
+  // Add X-axis labels
+  xValues.forEach((xVal, index) => {
+    const x = index * xStep;
+    
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', x);
+    label.setAttribute('y', chartHeight + 25);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('font-family', 'Segoe UI, sans-serif');
+    label.setAttribute('font-size', '12');
+    label.setAttribute('fill', '#202124');
+    label.textContent = String(xVal);
+    chartGroup.appendChild(label);
+  });
+
+  // Render lines for each series
+  seriesNames.forEach((seriesName, seriesIndex) => {
+    const seriesData = dataGrouped[seriesName];
+    
+    // Determine line color
+    let lineColor = colors[seriesIndex % colors.length];
+    
+    // If color field is available, try to use it for this series
+    if (colorField && seriesData.length > 0) {
+      const firstColorValue = seriesData[0].color;
+      const validColor = validateAndCleanColor(firstColorValue);
+      if (validColor) {
+        lineColor = validColor;
+      }
+    }
+    
+    // Create line path
+    const points = seriesData.map(point => {
+      const x = xValues.indexOf(point.x) * xStep;
+      const y = yScale(point.y);
+      return { x, y, value: point.y, originalData: point };
+    });
+    
+    if (points.length > 1) {
+      // Draw line
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      let pathData = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        pathData += ` L ${points[i].x} ${points[i].y}`;
+      }
+      
+      path.setAttribute('d', pathData);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', lineColor);
+      path.setAttribute('stroke-width', '3');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('stroke-linecap', 'round');
+      chartGroup.appendChild(path);
+    }
+    
+    // Draw points and labels
+    points.forEach(point => {
+      // Point circle
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', point.x);
+      circle.setAttribute('cy', point.y);
+      circle.setAttribute('r', '4');
+      circle.setAttribute('fill', lineColor);
+      circle.setAttribute('stroke', '#ffffff');
+      circle.setAttribute('stroke-width', '2');
+      circle.style.cursor = 'pointer';
+      
+      // Add hover effect
+      circle.addEventListener('mouseenter', () => {
+        circle.setAttribute('r', '6');
+        showTooltip(point.originalData.x, point.value, seriesName, point.originalData.color);
+      });
+      circle.addEventListener('mouseleave', () => {
+        circle.setAttribute('r', '4');
+        hideTooltip();
+      });
+      
+      chartGroup.appendChild(circle);
+      
+      // Value label (only show on hover or if not too crowded)
+      if (points.length <= 10) {
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', point.x);
+        text.setAttribute('y', point.y - 10);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-family', 'Segoe UI, sans-serif');
+        text.setAttribute('font-size', '11');
+        text.setAttribute('fill', '#5f6368');
+        text.setAttribute('font-weight', '500');
+        text.textContent = point.value.toLocaleString();
+        chartGroup.appendChild(text);
+      }
+    });
+  });
+
+  // Add legend if multiple series
+  if (seriesNames.length > 1) {
+    renderLegend(svg, seriesNames, colors, colorField, dataGrouped, margin);
+  }
+
+  // Add axes
+  const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  xAxis.setAttribute('x1', 0);
+  xAxis.setAttribute('y1', chartHeight);
+  xAxis.setAttribute('x2', chartWidth);
+  xAxis.setAttribute('y2', chartHeight);
+  xAxis.setAttribute('stroke', '#dadce0');
+  xAxis.setAttribute('stroke-width', '2');
+  chartGroup.appendChild(xAxis);
+
+  const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  yAxis.setAttribute('x1', 0);
+  yAxis.setAttribute('y1', 0);
+  yAxis.setAttribute('x2', 0);
+  yAxis.setAttribute('y2', chartHeight);
+  yAxis.setAttribute('stroke', '#dadce0');
+  yAxis.setAttribute('stroke-width', '2');
+  chartGroup.appendChild(yAxis);
+
+  console.log('✅ Line chart rendered with', seriesNames.length, 'series and', xValues.length, 'data points');
 }
 
-if (dscc){ dscc.subscribeToData(draw,{transform: dscc.objectTransform}); } else { document.addEventListener('DOMContentLoaded', ()=>{ draw({ fields:{Value:{label:'Value'}}, tables:{ DEFAULT:[ {X:'Jan',Value:10,Series:'A'}, {X:'Feb',Value:15,Series:'A'}, {X:'Mar',Value:9,Series:'A'}, {X:'Jan',Value:8,Series:'B'}, {X:'Feb',Value:12,Series:'B'}, {X:'Mar',Value:14,Series:'B'} ] } }); }); }
-})();
+function renderLegend(svg, seriesNames, colors, colorField, dataGrouped, margin) {
+  const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  legendGroup.setAttribute('transform', `translate(${margin.left + 20}, 20)`);
+  
+  seriesNames.forEach((seriesName, index) => {
+    const legendItem = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    legendItem.setAttribute('transform', `translate(${index * 120}, 0)`);
+    
+    // Determine color for this series
+    let seriesColor = colors[index % colors.length];
+    if (colorField && dataGrouped[seriesName] && dataGrouped[seriesName].length > 0) {
+      const firstColorValue = dataGrouped[seriesName][0].color;
+      const validColor = validateAndCleanColor(firstColorValue);
+      if (validColor) {
+        seriesColor = validColor;
+      }
+    }
+    
+    // Legend color indicator
+    const colorRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    colorRect.setAttribute('x', 0);
+    colorRect.setAttribute('y', 0);
+    colorRect.setAttribute('width', 12);
+    colorRect.setAttribute('height', 12);
+    colorRect.setAttribute('fill', seriesColor);
+    colorRect.setAttribute('rx', 2);
+    legendItem.appendChild(colorRect);
+    
+    // Legend text
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', 18);
+    text.setAttribute('y', 10);
+    text.setAttribute('font-family', 'Segoe UI, sans-serif');
+    text.setAttribute('font-size', '12');
+    text.setAttribute('fill', '#202124');
+    text.textContent = seriesName;
+    legendItem.appendChild(text);
+    
+    legendGroup.appendChild(legendItem);
+  });
+  
+  svg.appendChild(legendGroup);
+}
 
+// Tooltip functions (same as bar chart)
+function showTooltip(xValue, yValue, series, color) {
+  hideTooltip();
+  
+  const tooltip = document.createElement('div');
+  tooltip.id = 'line-tooltip';
+  tooltip.style.cssText = `
+    position: fixed;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: Segoe UI, sans-serif;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  `;
+  
+  let content = `<strong>${xValue}</strong><br/>Value: ${yValue.toLocaleString()}`;
+  if (series && series !== 'Default') {
+    content += `<br/>Series: ${series}`;
+  }
+  if (color) {
+    content += `<br/>Color: ${color}`;
+  }
+  
+  tooltip.innerHTML = content;
+  document.body.appendChild(tooltip);
+  
+  document.addEventListener('mousemove', updateTooltipPosition);
+}
 
+function hideTooltip() {
+  const tooltip = document.getElementById('line-tooltip');
+  if (tooltip) {
+    tooltip.remove();
+    document.removeEventListener('mousemove', updateTooltipPosition);
+  }
+}
+
+function updateTooltipPosition(e) {
+  const tooltip = document.getElementById('line-tooltip');
+  if (tooltip) {
+    tooltip.style.left = (e.clientX + 10) + 'px';
+    tooltip.style.top = (e.clientY - 10) + 'px';
+  }
+}
+
+// Initialize using the postMessage pattern that was actually working
+function initVisualization() {
+  console.log('🚀 Initializing line chart visualization...');
+  
+  // USE THE WORKING POSTMESSAGE PATTERN (same as bar chart)
+  console.log('🔧 Setting up postMessage subscription...');
+
+  // Listen for postMessage from parent window (this is the working pattern!)
+  window.addEventListener('message', function(event) {
+    console.log('📨 Received message from parent:', event);
+    console.log('📊 Message data looks like:', event.data);
+    if (event.data && typeof event.data === 'object') {
+      console.log('🎉 Found data in message! Trying to visualize...');
+      drawViz(event.data);
+    }
+  });
+
+  // Signal to parent that we're ready
+  console.log('📡 Signaling ready to parent window...');
+  try {
+    if (window.parent) {
+      window.parent.postMessage({type: 'ready'}, '*');
+    }
+  } catch (e) {
+    console.log('⚠️ Could not signal parent (normal in iframe)');
+  }
+
+  // Also try the new API if available, but don't rely on it
+  if (window.google?.lookerstudio?.registerVisualization) {
+    console.log('🔍 Trying new Looker Studio API as backup...');
+    try {
+      // Try without objectTransform first (same as working test viz)
+      window.google.lookerstudio.registerVisualization(drawViz);
+      console.log('✅ Registered with new API (no transform)');
+    } catch (e) {
+      console.log('⚠️ New API failed:', e.message);
+    }
+  }
+  
+  // Fallback: show test data after delay if no real data comes
+  setTimeout(() => {
+    const container = document.getElementById('container') || document.body;
+    if (!container.innerHTML.trim()) {
+      console.log('⚠️ No data received after 5 seconds - showing test line chart');
+      showTestLineChart();
+    }
+  }, 5000);
+}
+
+// Test line chart fallback function
+function showTestLineChart() {
+  console.log('🧪 Showing test line chart...');
+  
+  const testData = {
+    dataResponse: {
+      tables: [{
+        id: "DEFAULT",
+        fields: ["dimension", "metric", "series"],
+        rows: [
+          ["Jan", "100", "Series A"],
+          ["Feb", "150", "Series A"], 
+          ["Mar", "120", "Series A"],
+          ["Apr", "180", "Series A"],
+          ["Jan", "80", "Series B"],
+          ["Feb", "110", "Series B"],
+          ["Mar", "140", "Series B"],
+          ["Apr", "160", "Series B"]
+        ]
+      }]
+    },
+    fields: [
+      {id: "dimension", name: "month", concept: "DIMENSION"},
+      {id: "metric", name: "value", concept: "METRIC"},
+      {id: "series", name: "category", concept: "DIMENSION"}
+    ]
+  };
+  
+  drawViz(testData);
+}
+
+// Start when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initVisualization);
+} else {
+  initVisualization();
+}
+
+console.log('📈 Line chart script loaded and ready!');

@@ -1,22 +1,27 @@
 {
-  "name": "Custom Line Chart",
-  "organization": "Your Name", 
-  "description": "Line chart with optional series grouping and dynamic styling.",
-  "logoUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/line-chart.png",
-  "supportUrl": "https://example.com",
-  "packageUrl": "https://example.com",
+  "name": "CustomLineChart",
+  "organization": "DarbnesisTech",
+  "organizationUrl": "https://example.com",
+  "description": "Custom line chart with series and color field support",
+  "logoUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/table-chart.png",
+  "supportUrl": "https://example.com/support",
+  "packageUrl": "https://example.com/viz/linechart",
+  "privacyPolicyUrl": "https://example.com/privacy",
+  "termsOfServiceUrl": "https://example.com/terms",
   "devMode": true,
-  "components": [{
-    "id": "linechart",
-    "name": "Line Chart",
-    "description": "Line chart with dynamic styling and optional series.",
-    "iconUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/line-chart.png",
-    "resource": {
-      "js": "https://storage.googleapis.com/darbnesis-viz-assets/viz-line/viz.js",
-      "config": "https://storage.googleapis.com/darbnesis-viz-assets/viz-line/viz-config.json",
-      "css": "https://storage.googleapis.com/darbnesis-viz-assets/viz-line/viz.css"
+  "components": [
+    {
+      "id": "linechart",
+      "name": "LineChart",
+      "description": "Custom line chart with series and color field support",
+      "iconUrl": "https://raw.githubusercontent.com/googledatastudio/community-visualizations/master/docs/codelab/img/table-chart.png",
+      "resource": {
+        "js": "gs://darbnesis-viz-assets/viz-line/viz.js",
+        "config": "gs://darbnesis-viz-assets/viz-line/viz-config.json",
+        "css": "gs://darbnesis-viz-assets/viz-line/viz.css"
+      }
     }
-  }]
+  ]
 }
 
 

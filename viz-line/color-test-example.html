@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line Chart Color Field Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #1a73e8;
+        }
+        
+        .color-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .color-card {
+            background: #f8f9fa;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            padding: 15px;
+        }
+        
+        .color-card h4 {
+            margin-top: 0;
+            color: #202124;
+        }
+        
+        .color-sample {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+        
+        .color-preview {
+            width: 30px;
+            height: 20px;
+            border: 1px solid #dadce0;
+            border-radius: 3px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #dadce0;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .data-table th {
+            background: #f1f3f4;
+            font-weight: 600;
+        }
+        
+        .code-example {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .field-config {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .field-config h4 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+        
+        .line-preview {
+            width: 100%;
+            height: 3px;
+            border-radius: 2px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Line Chart Color Field Test</h1>
+        <p>This page demonstrates how the enhanced line chart handles different color formats and series configurations.</p>
+        
+        <div class="test-section">
+            <h3>📊 Line Chart Field Configuration</h3>
+            <div class="field-config">
+                <h4>Field Mapping for Line Charts</h4>
+                <ul>
+                    <li><strong>X-Axis (Dimension):</strong> Time, dates, or categories for the horizontal axis</li>
+                    <li><strong>Value (Metric):</strong> Numeric values for the vertical axis</li>
+                    <li><strong>Series (Dimension):</strong> Optional - creates multiple lines (e.g., Product Lines, Regions)</li>
+                    <li><strong>Color (Dimension):</strong> Optional - custom colors for lines (hex, CSS names, RGB)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎨 Line Color Options</h3>
+            <div class="color-examples">
+                <div class="color-card">
+                    <h4>Single Line with Color Field</h4>
+                    <div class="color-sample">
+                        <div class="line-preview" style="background: linear-gradient(to right, #ff6b6b, #ff6b6b);"></div>
+                        <code>#ff6b6b</code> - Single colored line
+                    </div>
+                    <div class="color-sample">
+                        <div class="line-preview" style="background: linear-gradient(to right, steelblue, steelblue);"></div>
+                        <code>steelblue</code> - CSS named color
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <h4>Multiple Series with Colors</h4>
+                    <div class="color-sample">
+                        <div class="line-preview" style="background: linear-gradient(to right, #4285f4, #4285f4);"></div>
+                        <code>Series A</code> - Palette color 1
+                    </div>
+                    <div class="color-sample">
+                        <div class="line-preview" style="background: linear-gradient(to right, #34a853, #34a853);"></div>
+                        <code>Series B</code> - Palette color 2
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <h4>Custom Series Colors</h4>
+                    <div class="color-sample">
+                        <div class="line-preview" style="background: linear-gradient(to right, #ff0066, #ff0066);"></div>
+                        <code>Sales</code> → <code>#ff0066</code>
+                    </div>
+                    <div class="color-sample">
+                        <div class="line-preview" style="background: linear-gradient(to right, #00cc88, #00cc88);"></div>
+                        <code>Profit</code> → <code>#00cc88</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📈 Example Data Structures</h3>
+            
+            <h4>📋 Time Series with Multiple Lines</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Month (X-Axis)</th>
+                        <th>Revenue (Value)</th>
+                        <th>Department (Series)</th>
+                        <th>Color (Optional)</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Jan 2024</td>
+                        <td>50000</td>
+                        <td>Sales</td>
+                        <td>#ff6b6b</td>
+                        <td>Red line for Sales</td>
+                    </tr>
+                    <tr>
+                        <td>Feb 2024</td>
+                        <td>55000</td>
+                        <td>Sales</td>
+                        <td>#ff6b6b</td>
+                        <td>Continues red line</td>
+                    </tr>
+                    <tr>
+                        <td>Jan 2024</td>
+                        <td>30000</td>
+                        <td>Marketing</td>
+                        <td>steelblue</td>
+                        <td>Blue line for Marketing</td>
+                    </tr>
+                    <tr>
+                        <td>Feb 2024</td>
+                        <td>32000</td>
+                        <td>Marketing</td>
+                        <td>steelblue</td>
+                        <td>Continues blue line</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>📋 Single Line with Custom Color</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Quarter (X-Axis)</th>
+                        <th>Growth (Value)</th>
+                        <th>Color</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Q1 2024</td>
+                        <td>15.5</td>
+                        <td>rgb(75, 192, 192)</td>
+                        <td rowspan="4">Single teal line connecting all points</td>
+                    </tr>
+                    <tr>
+                        <td>Q2 2024</td>
+                        <td>18.2</td>
+                        <td>rgb(75, 192, 192)</td>
+                    </tr>
+                    <tr>
+                        <td>Q3 2024</td>
+                        <td>16.8</td>
+                        <td>rgb(75, 192, 192)</td>
+                    </tr>
+                    <tr>
+                        <td>Q4 2024</td>
+                        <td>21.0</td>
+                        <td>rgb(75, 192, 192)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎯 Usage Scenarios</h3>
+            
+            <div class="color-examples">
+                <div class="color-card">
+                    <h4>📈 Time Series Analysis</h4>
+                    <ul>
+                        <li><strong>X-Axis:</strong> Date/Time field</li>
+                        <li><strong>Value:</strong> Metric to track over time</li>
+                        <li><strong>Series:</strong> Different categories/products</li>
+                        <li><strong>Color:</strong> Brand colors or status indicators</li>
+                    </ul>
+                </div>
+                
+                <div class="color-card">
+                    <h4>📊 Performance Comparison</h4>
+                    <ul>
+                        <li><strong>X-Axis:</strong> Performance periods</li>
+                        <li><strong>Value:</strong> KPI measurements</li>
+                        <li><strong>Series:</strong> Teams, regions, products</li>
+                        <li><strong>Color:</strong> Performance level colors</li>
+                    </ul>
+                </div>
+                
+                <div class="color-card">
+                    <h4>📈 Trend Analysis</h4>
+                    <ul>
+                        <li><strong>X-Axis:</strong> Categories or stages</li>
+                        <li><strong>Value:</strong> Measured values</li>
+                        <li><strong>Series:</strong> Different data sets</li>
+                        <li><strong>Color:</strong> Trend direction colors</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎯 Usage in Looker Studio</h3>
+            <p><strong>Field Configuration:</strong></p>
+            <ol>
+                <li><strong>X-Axis Field:</strong> Select your time or category dimension</li>
+                <li><strong>Value Field:</strong> Select your metric for line values</li>
+                <li><strong>Series Field:</strong> Optional - Select dimension to create multiple lines</li>
+                <li><strong>Color Field:</strong> Optional - Select dimension containing color values</li>
+            </ol>
+            
+            <div class="code-example">
+// Color field behavior:
+// - Without Series field: Single line uses first color value
+// - With Series field: Each series can have its own color
+// - Mixed colors: You can have hex, CSS names, and RGB in same dataset
+// - Fallback: Invalid colors use default palette
+
+// Example data for multiple colored series:
+{
+  "Month": "Jan", "Revenue": 50000, "Department": "Sales", "Color": "#ff6b6b"
+  "Month": "Jan", "Revenue": 30000, "Department": "Marketing", "Color": "steelblue"  
+  "Month": "Jan", "Revenue": 20000, "Department": "Support", "Color": "rgb(255, 165, 0)"
+}
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 Debug Console Output</h3>
+            <p>When using the line chart, check the browser console for detailed analysis:</p>
+            <div class="code-example">
+📈 Line chart fields: {
+  xAxis: "month",
+  value: "revenue", 
+  series: "department",
+  color: "line_color"
+}
+
+🎨 Color field analysis: {
+  field: "line_color",
+  uniqueValues: ["#ff6b6b", "steelblue", "rgb(255, 165, 0)"],
+  validColors: [
+    { original: "#ff6b6b", validated: "#ff6b6b", isValid: true },
+    { original: "steelblue", validated: "steelblue", isValid: true },
+    { original: "rgb(255, 165, 0)", validated: "rgb(255, 165, 0)", isValid: true }
+  ]
+}
+
+📊 Data processed: {
+  series: 3,
+  xValues: 12, 
+  maxY: 60000,
+  minY: 0
+}
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>💡 Pro Tips for Line Charts</h3>
+            <ul>
+                <li><strong>Time Series:</strong> Use date fields for X-axis to get proper chronological ordering</li>
+                <li><strong>Multiple Lines:</strong> Use Series field to compare different categories over time</li>
+                <li><strong>Color Consistency:</strong> Use hex codes for precise brand color matching</li>
+                <li><strong>Performance:</strong> Line charts handle large datasets well with automatic point spacing</li>
+                <li><strong>Tooltips:</strong> Hover over points to see detailed values and series information</li>
+                <li><strong>Legend:</strong> Automatically appears when multiple series are present</li>
+                <li><strong>Responsive:</strong> Charts adapt to different screen sizes automatically</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h3>🚀 Next Steps</h3>
+            <ol>
+                <li>Deploy the updated line chart using: <code>terraform apply</code></li>
+                <li>Use manifest URL: <code>gs://darbnesis-viz-assets/viz-line</code></li>
+                <li>Configure your fields in Looker Studio (X-Axis, Value, optional Series & Color)</li>
+                <li>Add color values to your Color field using supported formats</li>
+                <li>Check browser console for debug information and color validation</li>
+                <li>Test with different data structures (single line, multiple series, custom colors)</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
